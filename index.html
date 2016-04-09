@@ -11,6 +11,7 @@
     <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
 	<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
 	<script src="/socket.io/socket.io.js"></script>
+	
 	<!-- Room Object Script -->
 	<script type ="text/javascript">
 		function Room (name, creator, priv, password) {
@@ -94,6 +95,7 @@
 			});
 			
 			$("#newChatSubmit").click(function(){
+				console.log ($('#roomName').val());
 				var roomName = $('#roomName').val();
 				if ($("#private").is(":checked")) {
 					isPrivate = true;
@@ -103,7 +105,6 @@
 				
 				var pass = $('#roomPass').val();
 				activeRoom = new Room(roomName, user, isPrivate, pass);
-				alert(activeRoom);
 				rooms[rooms.length] = activeRoom;
 				
 				$("#activeRooms").append('<li class="active"><a href="">' + roomName + '</a></li>')
@@ -153,8 +154,6 @@
 			});
 
 	</script>
-	
-	
 	
 	<!-- Menu Toggle Script -->
     <script>
@@ -304,6 +303,10 @@
 		
 		#footer{
 			height: 75px;
+		}
+		
+		a{
+			color: white;
 		}
 		
 		.reveal-if-active {
