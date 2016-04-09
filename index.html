@@ -84,6 +84,18 @@
 			document.getElementById("chatlog").appendChild(document.createTextNode(data['user'] + ": " + data['message']));
 		});
 		
+		socketio.on("new_room",function(data) {
+			//Append an HR thematic break and the escaped HTML of the new message
+			//document.getElementById("activeRooms").appendChild(document.createElement("hr"));
+			$("#activeRooms").append('<li class="active"><a onclick="enterRoom(); return false;" href="javascript: enterRoom()">' + data['room'] + '</a></li>')
+		});
+		
+		socketio.on("room_list", function(data) {
+			//Append an HR thematic break and the escaped HTML of the new message
+			//document.getElementById("activeRooms").appendChild(document.createElement("hr"));
+			$("#activeRooms").append('<li class="active"><a href="">' + data['room'] + '</a></li>')
+		});
+		
 		function sendMessage(){
 			var msg = $("#message_input").val();
 			socketio.emit("message_to_server", {message:msg, user:user});
@@ -92,6 +104,7 @@
 		$(document).ready(function() {	
 			$("#loginSubmit").click(function(){
 			   user = $('#user').val();
+			   socketio.emit("new_user");
 			});
 			
 			$("#newChatSubmit").click(function(){
@@ -107,9 +120,8 @@
 				activeRoom = new Room(roomName, user, isPrivate, pass);
 				rooms[rooms.length] = activeRoom;
 				
-				$("#activeRooms").append('<li class="active"><a href="">' + roomName + '</a></li>')
-				
-				//call enter room?
+				socketio.emit("add_room", {room:roomName});
+				$("#header").append(roomName);
 			});
 			
 			$("#leaveChat").click(function(){
@@ -118,35 +130,25 @@
 				
 			});
 			
-			$("#enterRoom").click(function(){
-				var roomName = $('#room').val();
-				var index = $('#index').val();
-				var pass = $('#pass').val();
-				activeRoom = rooms[index];
-				if (activeRoom.isPrivate()) {
-					if (activeRoom.getPassword==pass) {
-						activeRoom.addMember(user);
-					} else {
-						alert("Invalid Password! Entry Denied");
-					}
-				} else {
-					activeRoom.addMember(user);
-				}
+			$(".active").click(function(){
+				$("#chatName").append("bob");
+			});
+			
+			function enterRoom(){
+				//activeRoom = rooms[index];
+				//if (activeRoom.isPrivate()) {
+				//	if (activeRoom.getPassword==pass) {
+				//		activeRoom.addMember(user);
+				//	} else {
+				//		alert("Invalid Password! Entry Denied");
+				//	}
+				//} else {
+				//	activeRoom.addMember(user);
+				//}
 				
-				$("#header").append(roomName);
-			});
-			
-			$("#send").click(function(){
-				if (activeRoom != null) {
-					activeRoom.sendMessage(user, msg);
-				}
-			});
-			
-			$("#DM").click(function(){
-				if (activeRoom != null) {
-					activeRoom.sendMessage(user, msg);
-				}
-			});
+				$("#chatName").append("bob");
+			};
+				
 		});
 		
 			$(window).load(function(){
@@ -347,7 +349,7 @@
         <div id="chatroom-wrapper" class="container-fluid">
                 
 				<div id="header" class="row">
-					<div id="roomName" class="col-sm-9"></div>
+					<div id="chatName" class="col-sm-9"></div>
 					<div id="numMembers" class="col-sm-3">
 						<a href="#menu-toggle" class="btn btn-info btn-sm" id="menu-toggle">Toggle Menu</a>
 					</div>
