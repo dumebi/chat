@@ -70,23 +70,23 @@
 
 	<!-- Function Script -->
 	<script type ="text/javascript">
+		
+		var user;
+		var rooms = [];
+		var activeRoom = null;
+		var isPrivate;
+
 		var socketio = io.connect();
 		socketio.on("message_to_client",function(data) {
 			//Append an HR thematic break and the escaped HTML of the new message
 			document.getElementById("chatlog").appendChild(document.createElement("hr"));
-			document.getElementById("chatlog").appendChild(document.createTextNode(user + ": " + data['message']));
-			alert(user);
+			document.getElementById("chatlog").appendChild(document.createTextNode(data['user'] + ": " + data['message']));
 		});
 		
 		function sendMessage(){
 			var msg = $("#message_input").val();
 			socketio.emit("message_to_server", {message:msg, user:user});
 		}
-		
-		var user;
-		var rooms = [];
-		var activeRoom;
-		var isPrivate;
 		
 		$(document).ready(function() {	
 			$("#loginSubmit").click(function(){
@@ -103,6 +103,7 @@
 				
 				var pass = $('#roomPass').val();
 				activeRoom = new Room(roomName, user, isPrivate, pass);
+				alert(activeRoom);
 				rooms[rooms.length] = activeRoom;
 				
 				$("#activeRooms").append('<li class="active"><a href="">' + roomName + '</a></li>')
@@ -239,7 +240,7 @@
 		
 		.sidebar-nav li a:hover {
 			text-decoration: none;
-			color: #fff;
+			color: white;
 			background: rgba(255,255,255,0.2);
 		}
 		
@@ -259,7 +260,7 @@
 		}
 		
 		.sidebar-nav > .sidebar-brand a:hover {
-			color: #fff;
+			color: white;
 			background: none;
 		}
 		
