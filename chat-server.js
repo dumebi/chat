@@ -7,7 +7,7 @@ var http = require("http"),
 var app = http.createServer(function(req, resp){
 	// This callback runs when a new connection is made to our HTTP server.
  
-	fs.readFile("client.html", function(err, data){
+	fs.readFile("index.html", function(err, data){
 		// This callback runs when the client.html file has been read from the filesystem.
  
 		if(err) return resp.writeHead(500);
@@ -25,7 +25,7 @@ io.sockets.on("connection", function(socket){
 	socket.on('message_to_server', function(data) {
 		// This callback runs when the server receives a new message from the client.
  
-		console.log("message: "+data["message"]); // log it to the Node.JS output
-		io.sockets.emit("message_to_client",{message:data["message"] }) // broadcast the message to other users
-	});
+		console.log(data["user"] + ": " + data["message"]); // log it to the Node.JS output
+		io.sockets.emit("message_to_client", {user: data["user"], message:data["message"]}) // broadcast the message to other users
+		});
 });

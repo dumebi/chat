@@ -11,6 +11,13 @@ $(document).ready(function() {
 	var rooms = [];
 	var activeRoom;
 	
+	$("#loginSubmit").click(function(){
+	   alert("before user set");
+	   user = $('#user').val();
+	   
+	   alert(user);
+	});
+	
 	$("#newChat").click(function(){
 		var roomName = $('#roomName').val();
 		var isPrivate = $('#private').value();

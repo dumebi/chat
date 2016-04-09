@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta http-equiv="content-type" content="text/html">
+	<meta charset="utf-8">
+	<title>Chat Room</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+	
+	<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
+	<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+	<!-- Room Object Script -->
+	<script type ="text/javascript">
+		function Room (name, creator, priv, password) {
+			this.name = name;
+			this.creator = creator;
+			this.members = [];
+			
+			this.isPrivate = priv;
+			this.password = password;
+		}
+	 
+		Room.prototype = {
+			getName: function() {
+				return this.name;
+			},
+			getCreator: function() {
+				return this.creator;
+			},
+			
+			isPrivate: function(){
+				return this.isPrivate;
+			},
+			
+			getPassword: function() {
+				return this.password;
+			},
+			
+			getMembers: function() {
+				return this.members;
+			},
+			
+			addMember: function(memberName) {
+				this.members[this.members.length] = memberName;
+			},
+			
+			isMember: function(memberName) {
+				for(m in this.members) {
+					if (m == memberName) {
+						return true;
+					}
+				}
+				return false;
+			},
+			
+			removeMember: function(memberName) {
+				var temp = []
+				for (var i = 0; i < this.members.length; i++){
+					if (this.members[i] != this.memberName) {
+						temp[i] = this.members[i];
+					}
+				}
+				this.members = temp;
+			},
+			
+		};
+	</script>	
+
+	<!-- Function Script -->
+	<script type ="text/javascript">
+		var socketio = io.connect();
+		socketio.on("message_to_client",function(data) {
+			//Append an HR thematic break and the escaped HTML of the new message
+			document.getElementById("chatlog").appendChild(document.createElement("hr"));
+			document.getElementById("chatlog").appendChild(document.createTextNode(user + ": " + data['message']));
+			alert(user);
+		});
+		
+		function sendMessage(){
+			var msg = $("#message_input").val();
+			socketio.emit("message_to_server", {message:msg, user:user});
+		}
+		
+		var user;
+		var rooms = [];
+		var activeRoom;
+		var isPrivate;
+		
+		$(document).ready(function() {	
+			$("#loginSubmit").click(function(){
+			   user = $('#user').val();
+			});
+			
+			$("#newChatSubmit").click(function(){
+				var roomName = $('#roomName').val();
+				if ($("#private").is(":checked")) {
+					isPrivate = true;
+				} else {
+					isPrivate = false;
+				}
+				
+				var pass = $('#roomPass').val();
+				activeRoom = new Room(roomName, user, isPrivate, pass);
+				rooms[rooms.length] = activeRoom;
+				
+				$("#activeRooms").append('<li class="active"><a href="">' + roomName + '</a></li>')
+				
+				//call enter room?
+			});
+			
+			$("#leaveChat").click(function(){
+				activeRoom.removeMember(user);
+				activeRoom = null;
+				
+			});
+			
+			$("#enterRoom").click(function(){
+				var roomName = $('#room').val();
+				var index = $('#index').val();
+				var pass = $('#pass').val();
+				activeRoom = rooms[index];
+				if (activeRoom.isPrivate()) {
+					if (activeRoom.getPassword==pass) {
+						activeRoom.addMember(user);
+					} else {
+						alert("Invalid Password! Entry Denied");
+					}
+				} else {
+					activeRoom.addMember(user);
+				}
+				
+				$("#header").append(roomName);
+			});
+			
+			$("#send").click(function(){
+				if (activeRoom != null) {
+					activeRoom.sendMessage(user, msg);
+				}
+			});
+			
+			$("#DM").click(function(){
+				if (activeRoom != null) {
+					activeRoom.sendMessage(user, msg);
+				}
+			});
+		});
+		
+			$(window).load(function(){
+			   $('#loginModal').modal('show');
+			});
+
+	</script>
+	
+	
+	
+	<!-- Menu Toggle Script -->
+    <script>
+		$(document).ready(function() {	
+			$("#menu-toggle").click(function(e) {
+				e.preventDefault();
+				$("#wrapper").toggleClass("toggled");
+			});
+		});
+    </script>
+	
+	<style>
+		/* Toggle Styles */
+		html, body {
+			height: 100%;
+		}
+		
+		#wrapper {
+			height: 100%;
+			padding-left: 0;
+			-webkit-transition: all 0.5s ease;
+			-moz-transition: all 0.5s ease;
+			-o-transition: all 0.5s ease;
+			transition: all 0.5s ease;
+		}
+		
+		#wrapper.toggled {
+			padding-left: 250px;
+		}
+		
+		#sidebar-wrapper {
+			z-index: 1000;
+			position: fixed;
+			left: 250px;
+			width: 0;
+			height: 100%;
+			margin-left: -250px;
+			overflow-y: auto;
+			background: #000;
+			-webkit-transition: all 0.5s ease;
+			-moz-transition: all 0.5s ease;
+			-o-transition: all 0.5s ease;
+			transition: all 0.5s ease;
+		}
+		
+		#wrapper.toggled #sidebar-wrapper {
+			width: 250px;
+		}
+		
+		#chatroom-wrapper {
+			height: 100%;
+			width: 100%;
+			position: absolute;
+			padding: 15px;
+		}
+		
+		#wrapper.toggled #chatroom-wrapper {
+			position: absolute;
+			margin-right: -250px;
+		}
+		
+		/* Sidebar Styles */
+		
+		.sidebar-nav {
+			position: absolute;
+			top: 0;
+			width: 250px;
+			margin: 0;
+			padding: 0;
+			list-style: none;
+		}
+		
+		.sidebar-nav li {
+			text-indent: 20px;
+			line-height: 40px;
+		}
+		
+		.sidebar-nav li a {
+			display: block;
+			text-decoration: none;
+			color: #999999;
+		}
+		
+		.sidebar-nav li a:hover {
+			text-decoration: none;
+			color: #fff;
+			background: rgba(255,255,255,0.2);
+		}
+		
+		.sidebar-nav li a:active,
+		.sidebar-nav li a:focus {
+			text-decoration: none;
+		}
+		
+		.sidebar-nav > .sidebar-brand {
+			height: 65px;
+			font-size: 18px;
+			line-height: 60px;
+		}
+		
+		.sidebar-nav > .sidebar-brand a {
+			color: #999999;
+		}
+		
+		.sidebar-nav > .sidebar-brand a:hover {
+			color: #fff;
+			background: none;
+		}
+		
+		@media(min-width:768px) {
+			#wrapper {
+				padding-left: 250px;
+			}
+		
+			#wrapper.toggled {
+				padding-left: 0;
+			}
+		
+			#sidebar-wrapper {
+				width: 250px;
+			}
+		
+			#wrapper.toggled #sidebar-wrapper {
+				width: 0;
+			}
+		
+			#chatroom-wrapper {
+				padding: 20px;
+				position: relative;
+			}
+		
+			#wrapper.toggled #chatroom-wrapper {
+				position: relative;
+				margin-right: 0;
+			}
+		}
+
+
+		/* added by CDW */
+		#header{
+		   height: 50px;
+		}
+		
+		#chat{
+			height: calc(100% - 125px);
+		}
+		
+		#footer{
+			height: 75px;
+		}
+		
+		.reveal-if-active {
+		  opacity: 0;
+		  max-height: 0;
+		  overflow: hidden;
+		}
+		
+		input[id="private"]:checked ~ .reveal-if-active {
+		  opacity: 1;
+		  max-height: 100px; /* little bit of a magic number :( */
+		  overflow: visible;
+		}
+
+	</style>	
+</head>
+
+<body>	
+    <div id="wrapper">
+
+        <!-- Sidebar -->
+        <div id="sidebar-wrapper">
+            <ul class="sidebar-nav">
+                <li class="sidebar-brand">
+                    <a href="#newChatModal" data-toggle="modal">
+                        Create New Room
+                    </a>
+                </li>
+				
+				<ul class="nav" id="activeRooms">
+					<!-- rooms get appended -->
+				</ul>
+            </ul>
+        </div>
+        <!-- /#sidebar-wrapper -->
+
+        <!-- Page Content -->
+        <div id="chatroom-wrapper" class="container-fluid">
+                
+				<div id="header" class="row">
+					<div id="roomName" class="col-sm-9"></div>
+					<div id="numMembers" class="col-sm-3">
+						<a href="#menu-toggle" class="btn btn-info btn-sm" id="menu-toggle">Toggle Menu</a>
+					</div>
+				</div>
+			  
+				<!-- content -->
+				<div id="chat" class="row">
+				  <div id="chatlog" class="col-sm-12">
+				
+				  </div>
+				</div>
+			  
+				<div id="footer" class="row" >    
+				  <div id="messageBox" class="col-sm-8">
+					<input id="message_input" type=text"/>
+				  </div>
+				  <div id="messageSend" class="col-sm-2">
+					<button id="sendButton" onclick="sendMessage()">send</button>
+				  </div>
+				</div>
+				
+        </div>
+        <!-- /#chatroom-wrapper -->
+		
+    </div>
+    <!-- /#wrapper -->
+
+
+	<!-- loginModal -->
+	<div id="loginModal" class="modal fade" role="dialog">
+		<div class="modal-dialog">
+			<!-- modal content-->
+			<div class="modal-content">
+				<div class="modal-header"></div>
+				<div class="modal-body">
+					<form id = "loginForm" class="form-horizontal" role="form">
+						<div class="form-group">
+							<label class="control-label col-sm-2" for="user">Username:</label>
+							<div class="col-sm-10">
+								<input id="user" type="text" class="form-control" placeholder="Enter username" required>
+							</div>
+						</div>
+					</form>
+				</div>
+				
+				<div class="modal-footer">
+					<button id="loginSubmit" type="submit" class="btn btn-default" data-dismiss="modal">Start Chatting</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- /loginModal -->
+	
+	<!-- newChatModal -->
+	<div id="newChatModal" class="modal fade" role="dialog">
+		<div class="modal-dialog">
+			<!-- modal content-->
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+				</div>
+				
+				<div class="modal-body">
+					<form id = "newRoomForm" class="form-horizontal" role="form">
+						<div class="form-group">
+							<label class="control-label col-sm-3" for="roomName">Room Name:</label>
+							<div class="col-sm-9">
+								<input id="roomName" type="text" class="form-control" placeholder="Enter room name" required>
+							</div>
+						</div>
+						
+						<div class="form-group">
+							<label class="control-label col-sm-3" for="roomType">Type:</label>
+							<div id="roomType" class="col-sm-9">
+								<input id="public" type="radio" name="roomTypeOption" checked>
+								<label>Public  </label>
+								<input id="private" type="radio" name="roomTypeOption"> 
+								<label>Private</label>
+							</div>
+						</div>
+						
+						<div class="reveal-if-active">
+							<div class="form-group">
+								<label class="control-label col-sm-3" for="roomPass">Password:</label>
+								<div class="col-sm-9">
+									<input id="roomPass" type="password" class="form-control" placeholder="Enter password" required>
+								</div>
+							</div>
+						</div>
+					</form>
+				</div>
+				
+				<div class="modal-footer">
+					<button id="newChatSubmit" type="submit" class="btn btn-default" data-dismiss="modal">Create Room</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- /newChatModal -->
+
+</body>
+</html>
