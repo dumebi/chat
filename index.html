@@ -123,7 +123,7 @@
 				rooms[rooms.length] = activeRoom;
 				
 				socketio.emit("add_room", {room:roomName});
-				$("#header").append(roomName);
+				$("#activeRooms").append('<li><a href="#">' + roomName + '</a></li>');
 			});
 			
 			$("#leaveChat").click(function(){
@@ -150,12 +150,23 @@
 				
 				$("#chatName").append("bob");
 			};
-				
+			
+			
+			$('input[type="radio"]').click(function() {
+				if($(this).attr('id') == 'private') {
+					 $('#reveal-if-active').show();           
+				}
+		 
+				else {
+					 $('#reveal-if-active').hide();   
+				}
+			});
+			
 		});
 		
-			$(window).load(function(){
-			   $('#loginModal').modal('show');
-			});
+		$(window).load(function(){
+		   $('#loginModal').modal('show');
+		});
 
 	</script>
 	
@@ -299,6 +310,7 @@
 		/* added by CDW */
 		#header{
 		   height: 50px;
+		   border-bottom: 1px solid
 		}
 		
 		#chat{
@@ -307,22 +319,18 @@
 		
 		#footer{
 			height: 75px;
+			border-top: 1px solid
 		}
 		
-		a{
-			color: white;
+
+		
+		#messageBox{
+			height: 80%;
 		}
 		
-		.reveal-if-active {
-		  opacity: 0;
-		  max-height: 0;
-		  overflow: hidden;
-		}
-		
-		input[id="private"]:checked ~ .reveal-if-active {
-		  opacity: 1;
-		  max-height: 100px; /* little bit of a magic number :( */
-		  overflow: visible;
+		#message_input {
+			width: 100%;
+			height: 100%;
 		}
 
 	</style>	
@@ -333,16 +341,16 @@
 
         <!-- Sidebar -->
         <div id="sidebar-wrapper">
-            <ul class="sidebar-nav">
+            <ul id="activeRooms" class="sidebar-nav">
                 <li class="sidebar-brand">
                     <a href="#newChatModal" data-toggle="modal">
                         Create New Room
                     </a>
                 </li>
 				
-				<ul class="nav" id="activeRooms">
-					<!-- rooms get appended -->
-				</ul>
+				<!--<ul class="nav" id="activeRooms">-->
+				<!--	 rooms get appended -->
+				<!--</ul>-->
             </ul>
         </div>
         <!-- /#sidebar-wrapper -->
@@ -365,8 +373,9 @@
 				</div>
 			  
 				<div id="footer" class="row" >    
-				  <div id="messageBox" class="col-sm-8">
-					<input id="message_input" type=text"/>
+				  <br>
+				  <div id="messageBox" class="col-sm-10">
+					<input id="message_input" type=textarea"/>
 				  </div>
 				  <div id="messageSend" class="col-sm-2">
 					<button id="sendButton" onclick="sendMessage()">send</button>
@@ -378,7 +387,6 @@
 		
     </div>
     <!-- /#wrapper -->
-
 
 	<!-- loginModal -->
 	<div id="loginModal" class="modal fade" role="dialog">
@@ -433,7 +441,7 @@
 							</div>
 						</div>
 						
-						<div class="reveal-if-active">
+						<div id="reveal-if-active" style='display:none'>
 							<div class="form-group">
 								<label class="control-label col-sm-3" for="roomPass">Password:</label>
 								<div class="col-sm-9">
