@@ -93,6 +93,7 @@
 		socketio.on("room_list", function(data) {
 			//Append an HR thematic break and the escaped HTML of the new message
 			//document.getElementById("activeRooms").appendChild(document.createElement("hr"));
+			alert(data['room']);
 			$("#activeRooms").append('<li class="active"><a href="">' + data['room'] + '</a></li>')
 		});
 		
@@ -104,7 +105,8 @@
 		$(document).ready(function() {	
 			$("#loginSubmit").click(function(){
 			   user = $('#user').val();
-			   socketio.emit("new_user");
+			   alert(user);
+			   socketio.emit("new_user", {});
 			});
 			
 			$("#newChatSubmit").click(function(){
