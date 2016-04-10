@@ -84,8 +84,9 @@
 			document.getElementById("chatlog").appendChild(document.createTextNode(data['user'] + ": " + data['message']));
 		});
 		
-		socketio.on("add_room", function(roomName) {
-			$("#activeRooms").append('<li class="active">' + roomName + '</li>')
+		socketio.on("create_room_to_client", function(data) {
+			var room = data;
+			$("#activeRooms").append('<li class="active">' + room.name + '</li>')
 		});
 		
 		socketio.on("room_list", function(data) {
@@ -121,7 +122,7 @@
 				activeRoom = new Room(roomName, user, isPrivate, pass);
 				rooms[rooms.length] = activeRoom;
 				
-				socketio.emit("add_room", roomName);
+				socketio.emit("create_room_to_server", roomName);
 				enterRoom(roomName);
 			});
 			
