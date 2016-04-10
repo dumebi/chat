@@ -105,7 +105,7 @@
 		$(document).ready(function() {	
 			$("#loginSubmit").click(function(){
 			   user = $('#user').val();
-			   alert(user);
+			   $('#chatroom-wrapper').show(); 
 			   socketio.emit("new_user", {});
 			});
 			
@@ -154,12 +154,19 @@
 			
 			$('input[type="radio"]').click(function() {
 				if($(this).attr('id') == 'private') {
-					 $('#reveal-if-active').show();           
+					$('#reveal-if-active').show();           
 				}
 		 
 				else {
-					 $('#reveal-if-active').hide();   
+					$('#reveal-if-active').hide();   
 				}
+			});
+			
+			$('table td').on('click',function(){
+				$("#addEvent").modal("show");
+				var cellId = ($(this).closest('td').attr('id'));
+		
+				$("#eventDate").attr("value", cellId);;	
 			});
 			
 		});
@@ -347,16 +354,12 @@
                         Create New Room
                     </a>
                 </li>
-				
-				<!--<ul class="nav" id="activeRooms">-->
-				<!--	 rooms get appended -->
-				<!--</ul>-->
             </ul>
         </div>
         <!-- /#sidebar-wrapper -->
 
         <!-- Page Content -->
-        <div id="chatroom-wrapper" class="container-fluid">
+        <div id="chatroom-wrapper" class="container-fluid" style='display:none'>
                 
 				<div id="header" class="row">
 					<div id="chatName" class="col-sm-9"></div>
