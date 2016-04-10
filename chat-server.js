@@ -29,19 +29,19 @@ function Room (name, creator, id, priv, password) {
 
 Room.prototype = {
 	
-	addMember: function(memberName) {
-		this.members[this.members.length] = memberName;
+	addMember: function(member) {
+		members.push(member);
 	},
 	
-	removeMember: function(memberName) {
+	removeMember: function(member) {
 		var personIndex = -1;
 		for(var i = 0; i < this.people.length; i++){
-			if(this.people[i].id === person.id){
+			if(this.members[i].id === member.id){
 				personIndex = i;
 				break;
 			}
 		}
-		this.people.remove(personIndex);
+		this.member.remove(personIndex);
 	},
 	
 	isMember: function(memberName) {
@@ -75,7 +75,7 @@ io.sockets.on("connection", function(socket){
 		sockets[socket.id] = socket;
 	})
 	
-	socket.on("create_room", function(data) {
+	socket.on("create_room_to_server", function(data) {
 		if (users[socket.id].inRoom != null) {
 			socket.emit("update", "You are in a room. Please leave it first to create your own.");
 		} else if (users[socket.id].owns == null) {
@@ -84,13 +84,11 @@ io.sockets.on("connection", function(socket){
 			rooms[id] = room;
 			io.sockets.emit("roomList", {rooms: rooms});
 			//add room to socket, and auto join the creator of the room
-			socket.join(data['name']);
+			socket.join(room.name);
 			users[socket.id].owns = id;
 			users[socket.id].inroom = id;
 			room.addMember(users[socket.id]);
-			socket.emit("update", "Welcome to " + room.name + ".");
-			socket.emit("sendRoomID", {id: id});
-			chatHistory[socket.room] = [];
+			io.sockets.emit('create_room_to_client', room);
 		} else {
 			socket.emit("update", "You have already created a room.");
 		}
