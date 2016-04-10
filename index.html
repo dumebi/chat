@@ -87,14 +87,15 @@
 		socketio.on("new_room",function(data) {
 			//Append an HR thematic break and the escaped HTML of the new message
 			//document.getElementById("activeRooms").appendChild(document.createElement("hr"));
-			$("#activeRooms").append('<li class="active"><a href="">' + data['room'] + '</a></li>');
+			$("#activeRooms").append('<li class="active"><a onclick="enterRoom(); return false;" href="javascript: enterRoom()">' + data['room'] + '</a></li>')
 		});
 		
-		//socketio.on("room_list", function(data) {
-		//	//Append an HR thematic break and the escaped HTML of the new message
-		//	//document.getElementById("activeRooms").appendChild(document.createElement("hr"));
-		//	$("#activeRooms").append('<li class="active"><a href="">' + data['room'] + '</a></li>');
-		//});
+		socketio.on("room_list", function(data) {
+			//Append an HR thematic break and the escaped HTML of the new message
+			//document.getElementById("activeRooms").appendChild(document.createElement("hr"));
+			alert(data['room']);
+			$("#activeRooms").append('<li class="active"><a href="">' + data['room'] + '</a></li>')
+		});
 		
 		function sendMessage(){
 			var msg = $("#message_input").val();
@@ -104,25 +105,26 @@
 		$(document).ready(function() {	
 			$("#loginSubmit").click(function(){
 			   user = $('#user').val();
-
 			   $('#chatroom-wrapper').show(); 
 			   socketio.emit("new_user", {});
-
 			});
 			
 			$("#newChatSubmit").click(function(){
+				console.log ($('#roomName').val());
 				var roomName = $('#roomName').val();
 				if ($("#private").is(":checked")) {
 					isPrivate = true;
 				} else {
 					isPrivate = false;
 				}
+				
 				var pass = $('#roomPass').val();
 				activeRoom = new Room(roomName, user, isPrivate, pass);
 				rooms[rooms.length] = activeRoom;
 				
 				socketio.emit("add_room", {room:roomName});
-				//$("#activeRooms").append('<li><a href="#">' + roomName + '</a></li>');
+				$("#activeRooms").append('<li><a href="#">' + roomName + '</a></li>');
+				enterRoom(roomName);
 			});
 			
 			$("#leaveChat").click(function(){
@@ -131,24 +133,45 @@
 				
 			});
 			
+			$(".active").click(function(){
+				$("#chatName").append("bob");
+			});
+			
+			function enterRoom(roomName){
+				//activeRoom = rooms[index];
+				//if (activeRoom.isPrivate()) {
+				//	if (activeRoom.getPassword==pass) {
+				//		activeRoom.addMember(user);
+				//	} else {
+				//		alert("Invalid Password! Entry Denied");
+				//	}
+				//} else {
+				//	activeRoom.addMember(user);
+				//}
+				
+				$("#chatName").append("bob");
+			};
+			
 			
 			$('input[type="radio"]').click(function() {
 				if($(this).attr('id') == 'private') {
 					$('#reveal-if-active').show();           
-				}
-		 
-				else {
+				} else {
 					$('#reveal-if-active').hide();   
 				}
 			});
 			
-			$('table td').on('click',function(){
-				$("#addEvent").modal("show");
-				var cellId = ($(this).closest('td').attr('id'));
-		
-				$("#eventDate").attr("value", cellId);;	
-			});
+			function getEventTarget(e) {
+				e = e || window.event;
+				return e.target || e.srcElement; 
+			}
 			
+			var ul = document.getElementById('activeRooms');
+			ul.onclick = function(event) {
+				var target = getEventTarget(event);
+				var roomName = $(target).html();
+				enterRoom(roomName);
+			};
 		});
 		
 		$(window).load(function(){
