@@ -12,6 +12,7 @@
 	<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
 	<script src="/socket.io/socket.io.js"></script>
 	
+	
 	<!-- Room Object Script -->
 	<script type ="text/javascript">
 		function Room (name, creator, priv, password) {
@@ -68,7 +69,7 @@
 			
 		};
 	</script>	
-
+	
 	<!-- Function Script -->
 	<script type ="text/javascript">
 		
@@ -78,40 +79,38 @@
 		var isPrivate;
 
 		var socketio = io.connect();
-		socketio.on("message_to_client",function(data) {
-			//Append an HR thematic break and the escaped HTML of the new message
+		socketio.on("message_to_client", function(data) {
 			document.getElementById("chatlog").appendChild(document.createElement("hr"));
 			document.getElementById("chatlog").appendChild(document.createTextNode(data['user'] + ": " + data['message']));
 		});
 		
-		socketio.on("new_room",function(data) {
-			//Append an HR thematic break and the escaped HTML of the new message
-			//document.getElementById("activeRooms").appendChild(document.createElement("hr"));
-			$("#activeRooms").append('<li class="active"><a onclick="enterRoom(); return false;" href="javascript: enterRoom()">' + data['room'] + '</a></li>')
+		socketio.on("add_room", function(roomName) {
+			$("#activeRooms").append('<li class="active">' + roomName + '</li>')
 		});
 		
 		socketio.on("room_list", function(data) {
 			//Append an HR thematic break and the escaped HTML of the new message
 			//document.getElementById("activeRooms").appendChild(document.createElement("hr"));
-			alert(data['room']);
-			$("#activeRooms").append('<li class="active"><a href="">' + data['room'] + '</a></li>')
+			//alert(data['room']);
+			//$("#activeRooms").append('<li class="active"><a href="">' + data['room'] + '</a></li>')
 		});
 		
 		function sendMessage(){
 			var msg = $("#message_input").val();
+			$("#message_input").val("");
 			socketio.emit("message_to_server", {message:msg, user:user});
 		}
 		
 		$(document).ready(function() {	
 			$("#loginSubmit").click(function(){
 			   user = $('#user').val();
-			   $('#chatroom-wrapper').show(); 
 			   socketio.emit("new_user", {});
 			});
 			
-			$("#newChatSubmit").click(function(){
-				console.log ($('#roomName').val());
+			$("#newChatSubmit").click(function(){ 
 				var roomName = $('#roomName').val();
+				$('#roomName').val("");
+				
 				if ($("#private").is(":checked")) {
 					isPrivate = true;
 				} else {
@@ -122,22 +121,20 @@
 				activeRoom = new Room(roomName, user, isPrivate, pass);
 				rooms[rooms.length] = activeRoom;
 				
-				socketio.emit("add_room", {room:roomName});
-				$("#activeRooms").append('<li><a href="#">' + roomName + '</a></li>');
+				socketio.emit("add_room", roomName);
 				enterRoom(roomName);
 			});
 			
 			$("#leaveChat").click(function(){
+				$('#chatroom-wrapper').hide(); 
 				activeRoom.removeMember(user);
 				activeRoom = null;
 				
 			});
 			
-			$(".active").click(function(){
-				$("#chatName").append("bob");
-			});
-			
 			function enterRoom(roomName){
+				
+				$('#chatroom-wrapper').show(); 
 				//activeRoom = rooms[index];
 				//if (activeRoom.isPrivate()) {
 				//	if (activeRoom.getPassword==pass) {
@@ -149,7 +146,7 @@
 				//	activeRoom.addMember(user);
 				//}
 				
-				$("#chatName").append("bob");
+				$("#chatName").html("<h4>" + roomName + "</h4>");
 			};
 			
 			
@@ -169,13 +166,20 @@
 			var ul = document.getElementById('activeRooms');
 			ul.onclick = function(event) {
 				var target = getEventTarget(event);
-				var roomName = $(target).html();
-				enterRoom(roomName);
+				var roomName = ($(target).html()).replace(/(^\s+|\s+$)/g,'');
+				if(roomName != 'Create New Room') {
+					enterRoom(roomName); 
+				}
 			};
 		});
 		
+		// login modal function
 		$(window).load(function(){
-		   $('#loginModal').modal('show');
+			$('#loginModal').modal({
+				backdrop: 'static',
+				keyboard: false
+			});
+			$('#loginModal').modal('show');
 		});
 
 	</script>
@@ -256,34 +260,34 @@
 			line-height: 40px;
 		}
 		
-		.sidebar-nav li a {
+		.sidebar-nav li {
 			display: block;
 			text-decoration: none;
 			color: #999999;
 		}
 		
-		.sidebar-nav li a:hover {
+		.sidebar-nav li:hover {
 			text-decoration: none;
 			color: white;
 			background: rgba(255,255,255,0.2);
 		}
 		
-		.sidebar-nav li a:active,
-		.sidebar-nav li a:focus {
+		.sidebar-nav li:active,
+		.sidebar-nav li:focus {
 			text-decoration: none;
 		}
 		
-		.sidebar-nav > .sidebar-brand {
+		.sidebar-nav > #createNewRoom {
 			height: 65px;
 			font-size: 18px;
 			line-height: 60px;
 		}
 		
-		.sidebar-nav > .sidebar-brand a {
+		.sidebar-nav > #createNewRoom {
 			color: #999999;
 		}
 		
-		.sidebar-nav > .sidebar-brand a:hover {
+		.sidebar-nav > #createNewRoom:hover {
 			color: white;
 			background: none;
 		}
@@ -352,10 +356,8 @@
         <!-- Sidebar -->
         <div id="sidebar-wrapper">
             <ul id="activeRooms" class="sidebar-nav">
-                <li class="sidebar-brand">
-                    <a href="#newChatModal" data-toggle="modal">
-                        Create New Room
-                    </a>
+                <li id="createNewRoom" href="#newChatModal" data-toggle="modal">
+                    Create New Room
                 </li>
             </ul>
         </div>
@@ -365,27 +367,28 @@
         <div id="chatroom-wrapper" class="container-fluid" style='display:none'>
                 
 				<div id="header" class="row">
-					<div id="chatName" class="col-sm-9"></div>
-					<div id="numMembers" class="col-sm-3">
+					<div id="chatName" class="col-sm-6"></div>
+					<div id="numMembers" class="col-sm-6 text-right">
+						<a href="#chatMemsModal" class="btn btn-info btn-sm" id="chatMemsModal" data-toggle="modal">Members</a>
 						<a href="#menu-toggle" class="btn btn-info btn-sm" id="menu-toggle">Toggle Menu</a>
 					</div>
 				</div>
 			  
 				<!-- content -->
 				<div id="chat" class="row">
-				  <div id="chatlog" class="col-sm-12">
-				
-				  </div>
+					<div id="chatlog" class="col-sm-12">
+				  
+					</div>
 				</div>
 			  
 				<div id="footer" class="row" >    
-				  <br>
-				  <div id="messageBox" class="col-sm-10">
-					<input id="message_input" type=textarea"/>
-				  </div>
-				  <div id="messageSend" class="col-sm-2">
-					<button id="sendButton" onclick="sendMessage()">send</button>
-				  </div>
+					<br>
+					<div id="messageBox" class="col-sm-10">
+						<input id="message_input" type="text" wrap="hard"/>
+					</div>
+					<div id="messageSend" class="col-sm-2">
+						<button id="sendButton" onclick="sendMessage()">send</button>
+					</div>
 				</div>
 				
         </div>
@@ -465,6 +468,25 @@
 		</div>
 	</div>
 	<!-- /newChatModal -->
+	
+	<!-- chatMemsModal -->
+	<div id="chatMemsModal" class="modal fade" role="dialog">
+		<div class="modal-dialog">
+			<!-- modal content-->
+			<div class="modal-content">
+				<div class="modal-header">
+					<h3>Room Members</h3>
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+				</div>
+				
+				<div class="modal-body">
+					test
+					<!--list members-->
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- /chatMemsModal -->
 
 </body>
 </html>
