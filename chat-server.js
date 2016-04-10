@@ -1,7 +1,8 @@
 // Require the packages we will use:
 var http = require("http"),
 	socketio = require("socket.io"),
-	fs = require("fs");
+	fs = require("fs"),
+	uuid = require("uuid");
  
 // Listen for HTTP connections.  This is essentially a miniature static file server that only serves our one file, client.html:
 var app = http.createServer(function(req, resp){
@@ -76,6 +77,7 @@ io.sockets.on("connection", function(socket){
 	})
 	
 	socket.on("create_room_to_server", function(data) {
+		console.log(data);
 		if (users[socket.id].inRoom != null) {
 			socket.emit("update", "You are in a room. Please leave it first to create your own.");
 		} else if (users[socket.id].owns == null) {
@@ -87,7 +89,7 @@ io.sockets.on("connection", function(socket){
 			socket.join(room.name);
 			users[socket.id].owns = id;
 			users[socket.id].inroom = id;
-			room.addMember(users[socket.id]);
+			//room.addMember(users[socket.id]);
 			io.sockets.emit('create_room_to_client', room);
 		} else {
 			socket.emit("update", "You have already created a room.");

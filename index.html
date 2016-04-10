@@ -15,37 +15,31 @@
 	
 	<!-- Room Object Script -->
 	<script type ="text/javascript">
-		function Room (name, creator, priv, password) {
+		function Room (name, creator, id, priv, password) {
 			this.name = name;
 			this.creator = creator;
+			this.id = id;
 			this.members = [];
 			
 			this.isPrivate = priv;
 			this.password = password;
 		}
-	 
+		
 		Room.prototype = {
-			getName: function() {
-				return this.name;
-			},
-			getCreator: function() {
-				return this.creator;
+			
+			addMember: function(member) {
+				members.push(member);
 			},
 			
-			isPrivate: function(){
-				return this.isPrivate;
-			},
-			
-			getPassword: function() {
-				return this.password;
-			},
-			
-			getMembers: function() {
-				return this.members;
-			},
-			
-			addMember: function(memberName) {
-				this.members[this.members.length] = memberName;
+			removeMember: function(member) {
+				var personIndex = -1;
+				for(var i = 0; i < this.people.length; i++){
+					if(this.members[i].id === member.id){
+						personIndex = i;
+						break;
+					}
+				}
+				this.member.remove(personIndex);
 			},
 			
 			isMember: function(memberName) {
@@ -55,19 +49,15 @@
 					}
 				}
 				return false;
-			},
-			
-			removeMember: function(memberName) {
-				var temp = []
-				for (var i = 0; i < this.members.length; i++){
-					if (this.members[i] != this.memberName) {
-						temp[i] = this.members[i];
-					}
-				}
-				this.members = temp;
-			},
-			
-		};
+			}
+		}
+		
+		function Person (name, roomOwn, roomIn) {
+			this.name = name;
+			this.owns= roomOwn;
+			this.inRoom = roomIn;
+		}
+
 	</script>	
 	
 	<!-- Function Script -->
@@ -85,7 +75,10 @@
 		});
 		
 		socketio.on("create_room_to_client", function(data) {
+			console.log("client side");
+			console.log(data);
 			var room = data;
+			
 			$("#activeRooms").append('<li class="active">' + room.name + '</li>')
 		});
 		
@@ -122,7 +115,8 @@
 				activeRoom = new Room(roomName, user, isPrivate, pass);
 				rooms[rooms.length] = activeRoom;
 				
-				socketio.emit("create_room_to_server", roomName);
+				socketio.emit("create_room_to_server", activeRoom);
+				console.log(activeRoom);
 				enterRoom(roomName);
 			});
 			
