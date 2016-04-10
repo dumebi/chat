@@ -23,15 +23,16 @@ var rooms = [];
 io.sockets.on("connection", function(socket){
 	// This callback runs when a new Socket.IO connection is established.
 	
-	socket.on("new_user", function(){
-		for (r in rooms){
-			io.sockets.emit("room_list", {room: r});
-		}
-	})
+	//socket.on("new_user", function(){
+	//	for (r in rooms){
+	//		io.sockets.emit("room_list", {room: r});
+	//	}
+	//})
 	
 	socket.on("add_room", function(data) {
 		//console.log(data["user"] + ": " + data["message"]); // log it to the Node.JS output
-		rooms[rooms.length] = data['room'];
+		//rooms[rooms.length] = data['room'];
+		//console.log (data['room']);
 		io.sockets.emit("new_room", {room: data['room']}) // broadcast the message to other users
 	});
  
