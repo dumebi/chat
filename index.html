@@ -235,8 +235,12 @@
 		});
 		
 		socketio.on("enter_room_to_client", function(data) {
+			$('#header').show();
+			$('#chatlog').empty();
+			$('#footer').show();
+			
 			document.getElementById("chatlog").appendChild(document.createElement("hr"));
-			document.getElementById("chatlog").appendChild(document.createTextNode(data));
+			document.getElementById("chatlog").appendChild(document.createTextNode(data));	
 		});
 		
 		socketio.on("list_mems_to_client", function(data) {
