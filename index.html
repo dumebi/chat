@@ -141,26 +141,22 @@
 		}
 		
 		#chat{
-			height: calc(100% - 125px);
+			height: calc(100% - 100px);
 			overflow: scroll;
 		}
 		
 		#footer{
-			height: 75px;
+			height: 50px;
 			border-top: 1px solid
 		}
-		
 
-		
 		#messageBox{
-			height: 80%;
+			height: 75%;
 		}
 		
 		#message_input {
 			width: 100%;
-			height: 100%;
 		}
-
 	</style>	
 
 	<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
@@ -214,7 +210,8 @@
 		var isPrivate;
 		var password;
 		var curRooms = {};
-		var members = {};
+		var users = {};
+		var toMem;
 
 		var socketio = io.connect();
 		socketio.on("new_user_to_client", function(data) {
@@ -244,7 +241,7 @@
 		});
 		
 		socketio.on("list_mems_to_client", function(data) {
-			memebers = data;
+			users = data;
 			for (m in data) {
 				var member = data[m];
 				$("#memsList").append('<li id="' + member.id + '" class="active">' + member.name + '</li>');
@@ -256,6 +253,11 @@
 		socketio.on("message_to_client", function(data) {
 			document.getElementById("chatlog").appendChild(document.createElement("hr"));
 			document.getElementById("chatlog").appendChild(document.createTextNode(data['user'] + ": " + data['message']));
+		});
+		
+		socketio.on("dm_message_to_client", function(data) {
+			document.getElementById("chatlog").appendChild(document.createElement("hr"));
+			document.getElementById("chatlog").appendChild(document.createTextNode("Direct Message From " + data['fromMem'].name + ": " + data['message']));
 		});
 		
 		function sendMessage(){
@@ -311,6 +313,26 @@
 
 		});
 		
+		function directMsg() {
+			var id = $("#dmButton").attr("class")
+			toMem = users[id];
+			$('#dmHeader').append('Direct Message to ' + toMem['name']);
+			
+			$('#memModal').modal('hide');
+			$('#dmModal').modal('show');
+		};
+		
+		function kickMem() {
+			var id = $("#kickButton").attr("class")
+			toMem = users[id];
+			socketio.emit("kick_mem_to_server", {fromMem:user, toMem:toMem});
+		};
+		
+		function banMem() {
+			var id = $("#banButton").attr("class")
+			toMem = users[id];
+			socketio.emit("ban_mem_to_server", {fromMem:user, toMem:toMem});
+		};
 		
 		$(document).ready(function() {	
 			$("#loginSubmit").click(function(){
@@ -369,52 +391,36 @@
 				if (id != user.id) {
 					memActions(id);
 				}
+				
 			};
 		
 			function memActions(id) {
-				console.log("test1");
-				var mem = (memebers[id]);
+				var mem = (users[id]);
+				
 				$('#memHeader').append("<h4>" + mem['name'] + "</h4>");
-				
-				$('#actionList').append('<button id="dmButton" class="' + id + '" data-toggle="modal" data-target="#dmModal" onclick="directMsg(' + mem + ')">Direct Message</button> ');
-				
-				console.log("test2");	
+				$('#actionList').append('<button id="dmButton" class="' + id + '"onclick="directMsg()">Direct Message</button>    ');
+	
 				if (user.id == activeRoom.creator) {
-					$('#actionList').append('<button class="' + id + '" onclick="kickMem(' + mem + ')">Kick Out</button> ');
-					$('#actionList').append('<button class="' + id + '" onclick="banMem(' + mem + ')">Ban</button>');
+					$('#actionList').append('<button id="kickButton" class="' + id + '" onclick="kickMem()">Kick Out</button>    ');
+					$('#actionList').append('<button id="banButton" class="' + id + '" onclick="banMem()">Ban</button>');
 				}
 				$('#chatMemsModal').modal('hide');
 				$('#memModal').modal('show');
-				console.log("test3");
-			};
-			
-			$("#dmButton").click(function() {
-				console.log("test4");
-				var id = $("#dmButton").attr("class")
-				var mem = members[id];
-				console.log("test5");
-				$('#dmHeader').append('Direct Message to' + mem.name);
-				
-				$('#memModal').modal('hide');
-				$('#dmModal').modal('show');
-			});
-			
-			function directMsg(mem) {
-				console.log("test6");
-			};
-			
-			function kickMem(mem) {
-			
-			};
-			
-			function banMem(mem) {
-			
 			};
 			
 			$("#chatMemsButton").click(function(){
 			   $("#memsList").empty();
 			   socketio.emit("list_mems_to_server", activeRoom.id);
 			});
+			
+			$("#dmSendButton").click(function(){
+				var msg = $("#dm_message_input").val();
+				$("#dm_message_input").val("");
+				socketio.emit("dm_message_to_server", {fromMem:user, toMem:toMem, message:msg});
+			});
+			
+			
+			
 		});
 		
 		// login modal function
@@ -608,6 +614,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<button type="button" class="close" data-dismiss="modal">&times;</button>
+					<div id="memHeader"></div>
 				</div>
 				
 				<div class="modal-body" id="actionList"></div>
@@ -628,7 +635,7 @@
 				
 				<div class="modal-body">
 					<div class="form-group">
-						<input id="dm_message_input" type="text"/>
+						<input id="dm_message_input" type="text" style="width: 100%;"/>
 					</div>
 				</div>
 				

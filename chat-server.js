@@ -113,5 +113,36 @@ io.sockets.on("connection", function(socket){
 		var user = data['user'];
 		console.log(user.name + ": " + data["message"]); // log it to the Node.JS output
 		io.sockets.in(user.inRoom).emit("message_to_client", {user: user.name, message:data["message"]}) // broadcast the message to other users
+	});
+	
+	socket.on('dm_message_to_server', function(data) {
+		// This callback runs when the server receives a new message from the client.
+		var fromMem = data['fromMem'];
+		var toMem = data['toMem'];
+		console.log("Direct Message from " + fromMem.name + " to " + toMem.name + ": " + data["message"]); // log it to the Node.JS output
+		io.sockets.in(toMem.inRoom).emit("dm_message_to_client", {fromMem:fromMem, toMem:toMem, message:data["message"]}) // broadcast the message to other users
+	});
+	
+	socket.on('kick_mem_to_server', function(data) {
+		// This callback runs when the server receives a new message from the client.
+		var fromMem = data['fromMem'];
+		var toMem = data['toMem'];
+		var room = fromMem.inRoom;
+		users[toMem.id].inRoom = null;
+		socket.leave(room);
+		io.sockets.in(room).emit("kick_mem_to_client", toMem.name + " has been kicked out!");
+		rooms[room].removeMember(users[toMem.id]);
+	
+	});
+	
+	socket.on('ban_mem_to_server', function(data) {
+		var fromMem = data['fromMem'];
+		var toMem = data['toMem'];
+		var room = fromMem.inRoom;
+		users[toMem.id].inRoom = null;
+		socket.leave(room);
+		io.sockets.in(room).emit("kick_mem_to_client", toMem.name + " has been banned!");
+		rooms[room].removeMember(users[toMem.id]);
 		});
+	
 });
