@@ -459,8 +459,7 @@
 			
 			$("#uploadSubmit").click(function(){
 				var pic = $("#pic").val();
-				console.log(pic);
-				$("pic").val("");
+				$("#pic").val("");
 				socketio.emit("send_pic_to_server", {user:user, pic:pic});
 			});
 			
