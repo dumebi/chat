@@ -256,9 +256,7 @@
 		});
 		
 		socketio.on("send_pic_to_client", function(data) {
-			//document.getElementById("chatlog").appendChild(document.createElement("hr"));
-			//document.getElementById("chatlog").appendChild(document.createTextNode(data['user'] + ": <img src='" + data['pic'] + "/>"));
-			$("#chatlog").append("<hr>" + data['user'] + ": <img src='" + data['pic'] + "alt='Could not send image.'></hr>");
+			$("#chatlog").append("<hr>" + data['user'] + ": <img src='" + data['pic'] + "' alt='Could not send image.' height='100' width='100'></hr>");
 			console.log(data['pic']);
 		});
 		
@@ -700,7 +698,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<button type="button" class="close" data-dismiss="modal">&times;</button>
-					<h4>Select a file to send...</h4>
+					<h4>Enter the url of your image...</h4>
 				</div>
 				
 				<div class="modal-body">
