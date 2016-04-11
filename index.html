@@ -7,188 +7,6 @@
 	<title>Chat Room</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 	
-	<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
-	<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
-	<script src="/socket.io/socket.io.js"></script>
-	
-	
-	<!-- Room Object Script -->
-	<script type ="text/javascript">
-		function Room (name, creator, id, priv, password) {
-			this.name = name;
-			this.creator = creator;
-			this.id = id;
-			this.members = [];
-			
-			this.isPrivate = priv;
-			this.password = password;
-		}
-		
-		Room.prototype = {
-			
-			addMember: function(member) {
-				members.push(member);
-			},
-			
-			removeMember: function(member) {
-				var personIndex = -1;
-				for(var i = 0; i < this.people.length; i++){
-					if(this.members[i].id === member.id){
-						personIndex = i;
-						break;
-					}
-				}
-				this.member.remove(personIndex);
-			},
-			
-			isMember: function(memberName) {
-				for(m in this.members) {
-					if (m == memberName) {
-						return true;
-					}
-				}
-				return false;
-			}
-		}
-		
-		function Person (name, roomOwn, roomIn) {
-			this.name = name;
-			this.owns= roomOwn;
-			this.inRoom = roomIn;
-		}
-
-	</script>	
-	
-	<!-- Function Script -->
-	<script type ="text/javascript">
-		
-		var user;
-		var rooms = [];
-		var activeRoom = null;
-		var isPrivate;
-
-		var socketio = io.connect();
-		socketio.on("message_to_client", function(data) {
-			document.getElementById("chatlog").appendChild(document.createElement("hr"));
-			document.getElementById("chatlog").appendChild(document.createTextNode(data['user'] + ": " + data['message']));
-		});
-		
-		socketio.on("create_room_to_client", function(data) {
-			console.log("client side");
-			console.log(data);
-			var room = data;
-			
-			$("#activeRooms").append('<li class="active">' + room.name + '</li>')
-		});
-		
-		socketio.on("room_list", function(data) {
-			//Append an HR thematic break and the escaped HTML of the new message
-			//document.getElementById("activeRooms").appendChild(document.createElement("hr"));
-			//alert(data['room']);
-			//$("#activeRooms").append('<li class="active"><a href="">' + data['room'] + '</a></li>')
-		});
-		
-		function sendMessage(){
-			var msg = $("#message_input").val();
-			$("#message_input").val("");
-			socketio.emit("message_to_server", {message:msg, user:user});
-		}
-		
-		$(document).ready(function() {	
-			$("#loginSubmit").click(function(){
-			   user = $('#user').val();
-			   socketio.emit("new_user", {});
-			});
-			
-			$("#newChatSubmit").click(function(){ 
-				var roomName = $('#roomName').val();
-				$('#roomName').val("");
-				
-				if ($("#private").is(":checked")) {
-					isPrivate = true;
-				} else {
-					isPrivate = false;
-				}
-				
-				var pass = $('#roomPass').val();
-				activeRoom = new Room(roomName, user, isPrivate, pass);
-				rooms[rooms.length] = activeRoom;
-				
-				socketio.emit("create_room_to_server", activeRoom);
-				console.log(activeRoom);
-				enterRoom(roomName);
-			});
-			
-			$("#leaveChat").click(function(){
-				$('#chatroom-wrapper').hide(); 
-				activeRoom.removeMember(user);
-				activeRoom = null;
-				
-			});
-			
-			function enterRoom(roomName){
-				
-				$('#chatroom-wrapper').show(); 
-				//activeRoom = rooms[index];
-				//if (activeRoom.isPrivate()) {
-				//	if (activeRoom.getPassword==pass) {
-				//		activeRoom.addMember(user);
-				//	} else {
-				//		alert("Invalid Password! Entry Denied");
-				//	}
-				//} else {
-				//	activeRoom.addMember(user);
-				//}
-				
-				$("#chatName").html("<h4>" + roomName + "</h4>");
-			};
-			
-			
-			$('input[type="radio"]').click(function() {
-				if($(this).attr('id') == 'private') {
-					$('#reveal-if-active').show();           
-				} else {
-					$('#reveal-if-active').hide();   
-				}
-			});
-			
-			function getEventTarget(e) {
-				e = e || window.event;
-				return e.target || e.srcElement; 
-			}
-			
-			var ul = document.getElementById('activeRooms');
-			ul.onclick = function(event) {
-				var target = getEventTarget(event);
-				var roomName = ($(target).html()).replace(/(^\s+|\s+$)/g,'');
-				if(roomName != 'Create New Room') {
-					enterRoom(roomName); 
-				}
-			};
-		});
-		
-		// login modal function
-		$(window).load(function(){
-			$('#loginModal').modal({
-				backdrop: 'static',
-				keyboard: false
-			});
-			$('#loginModal').modal('show');
-		});
-
-	</script>
-	
-	<!-- Menu Toggle Script -->
-    <script>
-		$(document).ready(function() {	
-			$("#menu-toggle").click(function(e) {
-				e.preventDefault();
-				$("#wrapper").toggleClass("toggled");
-			});
-		});
-    </script>
-	
 	<style>
 		/* Toggle Styles */
 		html, body {
@@ -324,6 +142,7 @@
 		
 		#chat{
 			height: calc(100% - 125px);
+			overflow: scroll;
 		}
 		
 		#footer{
@@ -343,6 +162,282 @@
 		}
 
 	</style>	
+
+	<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
+	<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+	
+	
+	<!-- Room Object Script -->
+	<script type ="text/javascript">
+		function Room (name, creator, id, priv, password) {
+			this.name = name;
+			this.creator = creator;
+			this.id = id;
+			this.members = {};
+			
+			this.isPrivate = priv;
+			this.password = password;
+		
+			this.addMember = function(member) {
+				this.members[member.id] = member;
+			};
+			
+			this.removeMember = function(member) {
+				delete this.members[member.name];
+			};
+			
+			this.isMember = function(memberName) {
+				for(m in this.members) {
+					if (m == memberName) {
+						return true;
+					}
+				}
+				return false;
+			};
+		}
+		
+		function Person (name, id, roomOwn, roomIn) {
+			this.name = name;
+			this.id = id;
+			this.owns = roomOwn;
+			this.inRoom = roomIn;
+		}
+	</script>	
+	
+	<!-- Function Script -->
+	<script type ="text/javascript">
+		var user;
+		var rooms = [];
+		var activeRoom = null;
+		var isPrivate;
+		var password;
+		var curRooms = {};
+		var members = {};
+
+		var socketio = io.connect();
+		socketio.on("new_user_to_client", function(data) {
+			user = data;
+		});
+	
+		socketio.on("room_list", function(data) {
+			curRooms = data;
+			for (r in curRooms) {
+				var room = curRooms[r];
+				$("#activeRooms").append('<li id="' + room.id + '" class="active">' + room.name + '</li>');
+			}
+		});
+		
+		socketio.on("create_room_to_client", function(data) {
+			var room = data;
+			$("#activeRooms").append('<li id="' + room.id + '"class="active">' + room.name + '</li>');
+			curRooms[room.id] = room;
+			$('input[type="radio"]').prop('checked', false);
+			$('#reveal-if-active').hide();
+			$('#roomPass').val("");
+		});
+		
+		socketio.on("enter_room_to_client", function(data) {
+			document.getElementById("chatlog").appendChild(document.createElement("hr"));
+			document.getElementById("chatlog").appendChild(document.createTextNode(data));
+		});
+		
+		socketio.on("list_mems_to_client", function(data) {
+			memebers = data;
+			for (m in data) {
+				var member = data[m];
+				$("#memsList").append('<li id="' + member.id + '" class="active">' + member.name + '</li>');
+				$('#memHeader').empty();
+				$('#actionList').empty();
+			}
+		});
+		
+		socketio.on("message_to_client", function(data) {
+			document.getElementById("chatlog").appendChild(document.createElement("hr"));
+			document.getElementById("chatlog").appendChild(document.createTextNode(data['user'] + ": " + data['message']));
+		});
+		
+		function sendMessage(){
+			var msg = $("#message_input").val();
+			$("#message_input").val("");
+			socketio.emit("message_to_server", {user:user, message:msg});
+		}
+		
+		function enterRoom(id){
+			activeRoom = curRooms[id];
+			
+			if (activeRoom.isPrivate) {
+				$('#privateChatModal').modal('show');
+				
+				$("#privateChatSubmit").click(function(){
+					var isPass = $('#enterRoomPass').val();
+					
+					if (activeRoom.password === isPass) {
+						if (user.inRoom != null && user.inRoom != id) {
+							$('#chatlog').empty();
+							socketio.emit("leave_room_to_server", {user: user, id: id});
+						} 
+	
+						user.inRoom = activeRoom.id;
+						socketio.emit("enter_room_to_server", user);
+						$('#chatroom-wrapper').show(); 
+						$("#chatName").html("<h4>" + activeRoom.name + "</h4>");
+						$('#privateChatModal').modal('hide');
+						$('#enterRoomPass').val("");
+					} else {
+						alert("Invalid Password!");
+					}
+				});
+			} else {
+				if (user.inRoom != null && user.inRoom != id) {
+					$('#chatlog').empty();
+					socketio.emit("leave_room_to_server", {user: user, id: id});
+				}
+				
+				user.inRoom = activeRoom.id;
+				socketio.emit("enter_room_to_server", user);
+				$('#chatroom-wrapper').show(); 
+				$("#chatName").html("<h4>" + activeRoom.name + "</h4>");
+			}
+				
+		};
+			
+		
+		
+		socketio.on("leave_room_to_client", function(data) {
+			document.getElementById("chatlog").appendChild(document.createElement("hr"));
+			document.getElementById("chatlog").appendChild(document.createTextNode(data));
+
+		});
+		
+		
+		$(document).ready(function() {	
+			$("#loginSubmit").click(function(){
+			   tempUser = new Person ($('#user').val(), null, null, null);
+			   socketio.emit("new_user_to_server", tempUser);
+			});
+			
+			// show password box for private chats
+			$('input[type="radio"]').click(function() {
+				if($(this).attr('id') == 'private') {
+					$('#reveal-if-active').show();
+					isPrivate = true;
+				} else {
+					$('#reveal-if-active').hide();
+					isPrivate = false;
+					password = "";
+				}
+			});
+			
+			// create new room
+			$("#newRoomSubmit").click(function(){ 
+				var roomName = $('#roomName').val();
+				
+				//reset form
+				$('#roomName').val("");
+				
+				if (isPrivate) {
+					password = $('#roomPass').val();
+				}
+				activeRoom = new Room(roomName, user.id, null, isPrivate, password);
+				
+				rooms[rooms.length] = activeRoom;
+				
+				socketio.emit("create_room_to_server", activeRoom);
+			});
+			
+			
+			function getEventTarget(e) {
+				e = e || window.event;
+				return e.target || e.srcElement; 
+			}
+			
+			var ul = document.getElementById('activeRooms');
+			ul.onclick = function(event) {
+				var target = getEventTarget(event);
+				var id = $(target).attr('id');
+				if(id != 'createNewRoom') {
+					enterRoom(id); 
+				}
+			};
+			
+			var mems = document.getElementById('memsList');
+			mems.onclick = function(event) {
+				var target = getEventTarget(event);
+				var id = $(target).attr('id');
+				if (id != user.id) {
+					memActions(id);
+				}
+			};
+		
+			function memActions(id) {
+				console.log("test1");
+				var mem = (memebers[id]);
+				$('#memHeader').append("<h4>" + mem['name'] + "</h4>");
+				
+				$('#actionList').append('<button id="dmButton" class="' + id + '" data-toggle="modal" data-target="#dmModal" onclick="directMsg(' + mem + ')">Direct Message</button> ');
+				
+				console.log("test2");	
+				if (user.id == activeRoom.creator) {
+					$('#actionList').append('<button class="' + id + '" onclick="kickMem(' + mem + ')">Kick Out</button> ');
+					$('#actionList').append('<button class="' + id + '" onclick="banMem(' + mem + ')">Ban</button>');
+				}
+				$('#chatMemsModal').modal('hide');
+				$('#memModal').modal('show');
+				console.log("test3");
+			};
+			
+			$("#dmButton").click(function() {
+				console.log("test4");
+				var id = $("#dmButton").attr("class")
+				var mem = members[id];
+				console.log("test5");
+				$('#dmHeader').append('Direct Message to' + mem.name);
+				
+				$('#memModal').modal('hide');
+				$('#dmModal').modal('show');
+			});
+			
+			function directMsg(mem) {
+				console.log("test6");
+			};
+			
+			function kickMem(mem) {
+			
+			};
+			
+			function banMem(mem) {
+			
+			};
+			
+			$("#chatMemsButton").click(function(){
+			   $("#memsList").empty();
+			   socketio.emit("list_mems_to_server", activeRoom.id);
+			});
+		});
+		
+		// login modal function
+		$(window).load(function(){
+			$('#loginModal').modal({
+				backdrop: 'static',
+				keyboard: false
+			});
+			$('#loginModal').modal('show');
+		});
+
+	</script>
+	
+	<!-- Menu Toggle Script -->
+    <script>
+		$(document).ready(function() {	
+			$("#menu-toggle").click(function(e) {
+				e.preventDefault();
+				$("#wrapper").toggleClass("toggled");
+			});
+		});
+    </script>
+	
 </head>
 
 <body>	
@@ -351,7 +446,7 @@
         <!-- Sidebar -->
         <div id="sidebar-wrapper">
             <ul id="activeRooms" class="sidebar-nav">
-                <li id="createNewRoom" href="#newChatModal" data-toggle="modal">
+                <li id="createNewRoom" data-target="#newChatModal" data-toggle="modal">
                     Create New Room
                 </li>
             </ul>
@@ -364,7 +459,8 @@
 				<div id="header" class="row">
 					<div id="chatName" class="col-sm-6"></div>
 					<div id="numMembers" class="col-sm-6 text-right">
-						<a href="#chatMemsModal" class="btn btn-info btn-sm" id="chatMemsModal" data-toggle="modal">Members</a>
+						<button id="chatMemsButton" class="btn btn-info btn-sm" data-toggle="modal" data-target="#chatMemsModal">Members</button>
+						
 						<a href="#menu-toggle" class="btn btn-info btn-sm" id="menu-toggle">Toggle Menu</a>
 					</div>
 				</div>
@@ -379,7 +475,7 @@
 				<div id="footer" class="row" >    
 					<br>
 					<div id="messageBox" class="col-sm-10">
-						<input id="message_input" type="text" wrap="hard"/>
+						<input id="message_input" type="text"/>
 					</div>
 					<div id="messageSend" class="col-sm-2">
 						<button id="sendButton" onclick="sendMessage()">send</button>
@@ -436,9 +532,9 @@
 						</div>
 						
 						<div class="form-group">
-							<label class="control-label col-sm-3" for="roomType">Type:</label>
+							<di class="control-label col-sm-3" for="roomType">Type:</di>
 							<div id="roomType" class="col-sm-9">
-								<input id="public" type="radio" name="roomTypeOption" checked>
+								<input id="public" type="radio" name="roomTypeOption">
 								<label>Public  </label>
 								<input id="private" type="radio" name="roomTypeOption"> 
 								<label>Private</label>
@@ -457,12 +553,37 @@
 				</div>
 				
 				<div class="modal-footer">
-					<button id="newChatSubmit" type="submit" class="btn btn-default" data-dismiss="modal">Create Room</button>
+					<button id="newRoomSubmit" type="submit" class="btn btn-default" data-dismiss="modal">Create Room</button>
 				</div>
 			</div>
 		</div>
 	</div>
 	<!-- /newChatModal -->
+	
+	<!-- privateChatModal -->
+	<div id="privateChatModal" class="modal fade" role="dialog">
+		<div class="modal-dialog">
+			<!-- modal content-->
+			<div class="modal-content">
+				<div class="modal-header"></div>
+				<div class="modal-body">
+					<form id = "privateChatForm" class="form-horizontal" role="form">
+						<div class="form-group">
+							<label class="control-label col-sm-3" for="enterRoomPass">Password:</label>
+							<div class="col-sm-9">
+								<input id="enterRoomPass" type="password" class="form-control" placeholder="Enter password" required>
+							</div>
+						</div>
+					</form>
+				</div>
+				
+				<div class="modal-footer">
+					<button id="privateChatSubmit" type="submit" class="btn btn-default" data-dismiss="modal">Enter Room</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- /loginModal -->
 	
 	<!-- chatMemsModal -->
 	<div id="chatMemsModal" class="modal fade" role="dialog">
@@ -470,18 +591,61 @@
 			<!-- modal content-->
 			<div class="modal-content">
 				<div class="modal-header">
-					<h3>Room Members</h3>
 					<button type="button" class="close" data-dismiss="modal">&times;</button>
+					<h4>Room Members</h4>
 				</div>
 				
-				<div class="modal-body">
-					test
-					<!--list members-->
-				</div>
+				<div class="modal-body" id="memsList"></div>
 			</div>
 		</div>
 	</div>
 	<!-- /chatMemsModal -->
+	
+	<!-- memModal -->
+	<div id="memModal" class="modal fade" role="dialog">
+		<div class="modal-dialog">
+			<!-- modal content-->
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+				</div>
+				
+				<div class="modal-body" id="actionList"></div>
+				
+			</div>
+		</div>
+	</div>
+	<!-- /memModal -->
+	
+	<!-- dmModal -->
+	<div id="dmModal" class="modal fade" role="dialog">
+		<div class="modal-dialog">
+			<!-- modal content-->
+			<div class="modal-content">
+				<div class="modal-header" id="dmHeader">
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+				</div>
+				
+				<div class="modal-body">
+					<div class="form-group">
+						<input id="dm_message_input" type="text"/>
+					</div>
+				</div>
+				
+				<div class="modal-footer">
+					<button id="dmSendButton" type="submit" class="btn btn-default" data-dismiss="modal">Send</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- /dmModal -->
+	
+	
 
 </body>
 </html>
+
+<!-- TO FIX:
+	- invalid password alert
+	- blank rooms
+-->

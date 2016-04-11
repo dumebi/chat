@@ -22,42 +22,33 @@ function Room (name, creator, id, priv, password) {
 	this.name = name;
 	this.creator = creator;
 	this.id = id;
-	this.members = [];
+	this.members = {};
 	
 	this.isPrivate = priv;
 	this.password = password;
-}
 
-Room.prototype = {
+	this.addMember = function(member) {
+		this.members[member.id] = member;
+	};
 	
-	addMember: function(member) {
-		members.push(member);
-	},
+	this.removeMember = function(member) {
+		delete this.members[member.name];
+	};
 	
-	removeMember: function(member) {
-		var personIndex = -1;
-		for(var i = 0; i < this.people.length; i++){
-			if(this.members[i].id === member.id){
-				personIndex = i;
-				break;
-			}
-		}
-		this.member.remove(personIndex);
-	},
-	
-	isMember: function(memberName) {
+	this.isMember = function(memberName) {
 		for(m in this.members) {
 			if (m == memberName) {
 				return true;
 			}
 		}
 		return false;
-	}
+	};
 }
 
-function Person (name, roomOwn, roomIn) {
+function Person (name, id, roomOwn, roomIn) {
 	this.name = name;
-	this.owns= roomOwn;
+	this.id = id;
+	this.owns = roomOwn;
 	this.inRoom = roomIn;
 }
 
@@ -71,41 +62,56 @@ var sockets = [];
 io.sockets.on("connection", function(socket){
 	// This callback runs when a new Socket.IO connection is established.
 	
-	socket.on("new_user", function(data){
-		users[socket.id] = new Person(data['name'], null, null);
+	socket.on("new_user_to_server", function(data){
+		var person = data;
+		person.id = socket.id;
+		users[socket.id] = person;
 		sockets[socket.id] = socket;
+		socket.emit("new_user_to_client", person);
+		if (Object.keys(rooms).length != 0) {
+			socket.emit("room_list", rooms);
+		}
 	})
 	
 	socket.on("create_room_to_server", function(data) {
-		console.log(data);
-		if (users[socket.id].inRoom != null) {
-			socket.emit("update", "You are in a room. Please leave it first to create your own.");
-		} else if (users[socket.id].owns == null) {
-			var id = uuid.v4();
-			var room = new Room(data['name'], data['creator'], id, data['priv'], data['pass']);
-			rooms[id] = room;
-			io.sockets.emit("roomList", {rooms: rooms});
-			//add room to socket, and auto join the creator of the room
-			socket.join(room.name);
-			users[socket.id].owns = id;
-			users[socket.id].inroom = id;
-			//room.addMember(users[socket.id]);
-			io.sockets.emit('create_room_to_client', room);
-		} else {
-			socket.emit("update", "You have already created a room.");
-		}
+		var roomId = uuid.v4();
+		var userId = data['creator'];
+		var room = new Room(data['name'], userId, roomId, data['isPrivate'], data['password']);
+		rooms[roomId] = room;
+		//add room to socket, and auto join the creator of the room
+		socket.join(roomId);
+		users[userId].owns = roomId;
+		users[userId].inRoom = roomId;
+		room.addMember(users[userId]);
+		io.sockets.emit('create_room_to_client', room);
 	});
 	
-	socket.on("join_room", function(data){
-		users[socket.id].inRoom = data.room.id;
-		socket.join(data.room);
-		
+	socket.on("enter_room_to_server", function(data) {
+		var roomId = data.inRoom;
+		users[data.id].inRoom = roomId;
+		socket.join(data.inRoom);
+		rooms[roomId].addMember(users[data.id]);
+		io.sockets.in(data.inRoom).emit("enter_room_to_client", data.name + " has joined!");
 	});
- 
+	
+	socket.on("leave_room_to_server", function(data) {
+		var user = data['user'];
+		var newRoom = data['id'];
+		var oldRoom = user.inRoom;
+		users[user.id].inRoom = newRoom;
+		socket.leave(oldRoom);
+		io.sockets.in(oldRoom).emit("leave_room_to_client", user.name + " has left!");
+		rooms[oldRoom].removeMember(users[user.id]);
+	});
+	
+	socket.on("list_mems_to_server", function(data) {
+		socket.emit("list_mems_to_client", rooms[data].members);
+	});
+
 	socket.on('message_to_server', function(data) {
 		// This callback runs when the server receives a new message from the client.
- 
-		console.log(data["user"] + ": " + data["message"]); // log it to the Node.JS output
-		io.sockets.emit("message_to_client", {user: data["user"], message:data["message"]}) // broadcast the message to other users
+		var user = data['user'];
+		console.log(user.name + ": " + data["message"]); // log it to the Node.JS output
+		io.sockets.in(user.inRoom).emit("message_to_client", {user: user.name, message:data["message"]}) // broadcast the message to other users
 		});
 });
