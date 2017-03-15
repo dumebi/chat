@@ -5,13 +5,13 @@
 	<meta http-equiv="content-type" content="text/html; charset=utf-8">
 	<title>Chat Room</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-	
+
 	<style>
 		/* Toggle Styles */
 		html, body {
 			height: 100%;
 		}
-		
+
 		#wrapper {
 			height: 100%;
 			padding-left: 0;
@@ -20,11 +20,11 @@
 			-o-transition: all 0.5s ease;
 			transition: all 0.5s ease;
 		}
-		
+
 		#wrapper.toggled {
 			padding-left: 250px;
 		}
-		
+
 		#sidebar-wrapper {
 			z-index: 1000;
 			position: fixed;
@@ -39,25 +39,32 @@
 			-o-transition: all 0.5s ease;
 			transition: all 0.5s ease;
 		}
-		
+
 		#wrapper.toggled #sidebar-wrapper {
 			width: 250px;
 		}
-		
+
 		#chatroom-wrapper {
 			height: 100%;
 			width: 100%;
 			position: absolute;
 			padding: 15px;
 		}
-		
-		#wrapper.toggled #chatroom-wrapper {
+
+		#dm-wrapper {
+			height: 100%;
+			width: 100%;
+			position: absolute;
+			padding: 15px;
+		}
+
+		#wrapper.toggled #chatroom-wrapper, #wrapper.toggled #dm-wrapper{
 			position: absolute;
 			margin-right: -250px;
 		}
-		
+
 		/* Sidebar Styles */
-		
+
 		.sidebar-nav {
 			position: absolute;
 			top: 0;
@@ -66,67 +73,81 @@
 			padding: 0;
 			list-style: none;
 		}
-		
-		.sidebar-nav li {
+
+		.dm-nav {
+			position: absolute;
+			top: 50%;
+			width: 250px;
+			margin: 0;
+			padding: 2px;
+			list-style: none;
+		}
+
+		.sidebar-nav, .dm-nav li {
 			text-indent: 20px;
 			line-height: 40px;
 		}
-		
-		.sidebar-nav li {
+
+		.sidebar-nav, .dm-nav li {
 			display: block;
 			text-decoration: none;
 			color: #999999;
 		}
-		
-		.sidebar-nav li:hover {
+
+		.sidebar-nav, .dm-nav li:hover {
 			text-decoration: none;
 			color: white;
 			background: rgba(255,255,255,0.2);
 		}
-		
-		.sidebar-nav li:active,
-		.sidebar-nav li:focus {
+
+		.sidebar-nav, .dm-nav li:active,
+		.sidebar-nav, .dm-nav li:focus {
 			text-decoration: none;
 		}
-		
+
 		.sidebar-nav > #createNewRoom {
 			height: 65px;
 			font-size: 18px;
 			line-height: 60px;
 		}
-		
+
 		.sidebar-nav > #createNewRoom {
 			color: #999999;
 		}
-		
+
 		.sidebar-nav > #createNewRoom:hover {
 			color: white;
 			background: none;
 		}
-		
+
 		@media(min-width:768px) {
 			#wrapper {
 				padding-left: 250px;
 			}
-		
+
 			#wrapper.toggled {
 				padding-left: 0;
 			}
-		
+
 			#sidebar-wrapper {
 				width: 250px;
 			}
-		
+
 			#wrapper.toggled #sidebar-wrapper {
 				width: 0;
 			}
-		
+
 			#chatroom-wrapper {
 				padding: 20px;
 				position: relative;
 			}
-		
-			#wrapper.toggled #chatroom-wrapper {
+
+			#dm-wrapper {
+				padding: 20px;
+				position: relative;
+			}
+
+			#wrapper.toggled #chatroom-wrapper, #wrapper.toggled #dm-wrapper {
 				position: relative;
 				margin-right: 0;
 			}
@@ -135,15 +156,15 @@
 
 		/* added by CDW */
 		#header{
-		   height: 50px;
-		   border-bottom: 1px solid
+			height: 50px;
+			border-bottom: 1px solid
 		}
-		
+
 		#chat{
 			height: calc(100% - 100px);
 			overflow: scroll;
 		}
-		
+
 		#footer{
 			height: 50px;
 			border-top: 1px solid
@@ -152,7 +173,7 @@
 		#messageBox{
 			height: 75%;
 		}
-		
+
 		#message_input {
 			width: 100%;
 		}
@@ -264,6 +285,12 @@
 		});
 		
 		socketio.on("dm_message_to_client", function(data) {
+
+            if(data['fromMem'].name != user.name && $(".dm-nav:not(:contains('"+ data['fromMem'].name +"'))")){
+                $(".dm-nav").append('<li id="' + data['fromMem'].name + '">' + data['fromMem'].name + '<i class="pull-right glyphicon glyphicon-envelope"></i></li>');
+            } else if(data['toMem'].name != user.name && $(".dm-nav:not(:contains('"+ data['toMem'].name +"'))")){
+                $(".dm-nav").append('<li id="' + data['toMem'].name + '">' + data['toMem'].name + '</li>');
+            }
 			document.getElementById("chatlog").appendChild(document.createElement("hr"));
 			document.getElementById("chatlog").appendChild(document.createTextNode("Direct Message From " + data['fromMem'].name + ": " + data['message']));
 		});
@@ -501,6 +528,11 @@
                     Create New Room
                 </li>
             </ul>
+			<ul id="activeDms" class="dm-nav">
+				<li id="DirectMessages">
+					Direct Messages
+				</li>
+			</ul>
         </div>
         <!-- /#sidebar-wrapper -->
 
