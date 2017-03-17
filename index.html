@@ -231,6 +231,7 @@
 		var password;
 		var curRooms = {};
 		var users = {};
+
 		var toMem;
 
 		var socketio = io.connect();
@@ -263,7 +264,7 @@
 			document.getElementById("chatlog").appendChild(document.createElement("hr"));
 			document.getElementById("chatlog").appendChild(document.createTextNode(data));	
 		});
-		
+
 		socketio.on("list_mems_to_client", function(data) {
 			users = data;
 			for (m in data) {
@@ -537,10 +538,10 @@
         <!-- /#sidebar-wrapper -->
 
         <!-- Page Content -->
-        <div id="chatroom-wrapper" class="container-fluid" style='display:none'>
+        <div id="chatroom-wrapper" class="container-fluid" data-room="" style='display:none'>
                 
 				<div id="header" class="row">
-					<div id="chatName" class="col-sm-6"></div>
+					<div data-room="" id="chatName" class="col-sm-6"></div>
 					<div id="numMembers" class="col-sm-6 text-right">
 						<button id="chatMemsButton" class="btn btn-info btn-sm" data-toggle="modal" data-target="#chatMemsModal">Members</button>
 						
@@ -550,7 +551,7 @@
 			  
 				<!-- content -->
 				<div id="chat" class="row">
-					<div id="chatlog" class="col-sm-12">
+					<div style="overflow-y:auto;" data-room="" id="chatlog" class="col-sm-12">
 				  
 					</div>
 				</div>
@@ -561,13 +562,40 @@
 						<input id="message_input" type="text"/>
 					</div>
 					<div id="messageSend" class="col-sm-2">
-						<button id="sendButton" onclick="sendMessage()">send</button>
-						<button id="uploadButton" data-toggle="modal" data-target="#uploadModal">upload</button>
+						<button data-room="" id="sendButton" onclick="sendMessage()">send</button>
+						<button data-room="" id="uploadButton" data-toggle="modal" data-target="#uploadModal">upload</button>
 					</div>
 				</div>
 				
         </div>
         <!-- /#chatroom-wrapper -->
+
+		<div id="dm-wrapper" class="container-fluid" data-dm="" style='display:none'>
+
+			<div id="dmheader" class="row">
+				<div data-dm="" id="dmchatName" class="col-sm-6"></div>
+			</div>
+
+			<!-- content -->
+			<div id="dmchat" class="row">
+				<div data-dm="" id="dmchatlog" class="col-sm-12">
+
+				</div>
+			</div>
+
+			<div id="dmfooter" class="row" >
+				<br>
+				<div id="dmmessageBox" class="col-sm-10">
+					<input id="dmmessage_input" type="text"/>
+				</div>
+				<div id="dmmessageSend" class="col-sm-2">
+					<button data-room="" id="dm_sendButton" onclick="sendMessage()">send</button>
+					<button data-room="" id="dm_uploadButton" data-toggle="modal" data-target="#uploadModal">upload</button>
+				</div>
+			</div>
+
+		</div>
+		<!-- /#chatroom-wrapper -->
 		
     </div>
     <!-- /#wrapper -->
