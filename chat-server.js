@@ -17,7 +17,7 @@ var app = http.createServer(function(req, resp){
 		resp.end(data);
 	});
 });
-app.listen(3456);
+app.listen(3457);
 
 function Room (name, creator, id, priv, password) {
 	this.name = name;
@@ -59,6 +59,8 @@ var io = socketio.listen(app);
 var rooms = {};
 var users = {};
 var sockets = [];
+var chatHistory = {};
+
 
 io.sockets.on("connection", function(socket){
 	// This callback runs when a new Socket.IO connection is established.
@@ -83,6 +85,9 @@ io.sockets.on("connection", function(socket){
 		socket.join(roomId);
 		users[userId].owns = roomId;
 		users[userId].inRoom = roomId;
+
+        chatHistory[roomId] = [];
+
 		room.addMember(users[userId]);
 		io.sockets.emit('create_room_to_client', room);
 	});
@@ -93,6 +98,11 @@ io.sockets.on("connection", function(socket){
 		socket.join(data.inRoom);
 		rooms[roomId].addMember(users[data.id]);
 		io.sockets.in(data.inRoom).emit("enter_room_to_client", data.name + " has joined!");
+
+        var keys = _.keys(chatHistory);
+        if (_.contains(keys, users[data.id].inRoom)) {
+            io.sockets.emit("history", chatHistory[users[data.id].inRoom]);
+        }
 	});
 	
 	socket.on("leave_room_to_server", function(data) {
@@ -112,8 +122,12 @@ io.sockets.on("connection", function(socket){
 	socket.on('message_to_server', function(data) {
 		// This callback runs when the server receives a new message from the client.
 		var user = data['user'];
+		//console.log("user in room "+user.inRoom);
 		console.log(user.name + ": " + data["message"]); // log it to the Node.JS output
+
+        chatHistory[user.inRoom].push("<strong>" + user.name + "</strong>: " + data['message']);
 		io.sockets.in(user.inRoom).emit("message_to_client", {user: user.name, message:data["message"]}) // broadcast the message to other users
+
 	});
 	
 	socket.on('send_pic_to_server', function(data) {
