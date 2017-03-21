@@ -19,6 +19,21 @@ var app = http.createServer(function(req, resp){
 });
 app.listen(3457);
 
+function zeroPad(num, size) {
+    var s = num + "";
+    while (s.length < size)
+        s = "0" + s;
+    return s;
+}
+
+// Format the time specified in ms from 1970 into local HH:MM:SS
+function timeFormat(msTime) {
+    var d = new Date(msTime);
+    return zeroPad(d.getHours(), 2) + ":" +
+        zeroPad(d.getMinutes(), 2) + ":" +
+        zeroPad(d.getSeconds(), 2) + " ";
+}
+
 function Room (name, creator, id, priv, password) {
 	this.name = name;
 	this.creator = creator;
@@ -60,7 +75,7 @@ var rooms = {};
 var users = {};
 var sockets = [];
 var chatHistory = {};
-
+var dmChatHistory = {};
 
 io.sockets.on("connection", function(socket){
 	// This callback runs when a new Socket.IO connection is established.
@@ -91,7 +106,16 @@ io.sockets.on("connection", function(socket){
 		room.addMember(users[userId]);
 		io.sockets.emit('create_room_to_client', room);
 	});
-	
+
+    socket.on("create_dm_to_server", function(data) {
+
+        dmChatHistory[data['chatID']] = [];
+        console.log("server chatID "+data['chatID']);
+
+        //room.addMember(users[userId]);
+        io.sockets.emit('create_dm_to_client', {chatID: data['chatID'], toMem: data['toMem'], fromMem: data['fromMem']});
+    });
+
 	socket.on("enter_room_to_server", function(data) {
 		var roomId = data.inRoom;
 		users[data.id].inRoom = roomId;
@@ -104,6 +128,16 @@ io.sockets.on("connection", function(socket){
             io.sockets.emit("history", chatHistory[users[data.id].inRoom]);
         }
 	});
+
+    socket.on("enter_dm_to_server", function(data) {
+        var chatID = data['activeDm'];
+        io.sockets.emit("enter_dm_to_client", chatID);
+
+        var keys = _.keys(dmChatHistory);
+        if (_.contains(keys, chatID)) {
+            io.sockets.emit("dmhistory", dmChatHistory[chatID]);
+        }
+    });
 	
 	socket.on("leave_room_to_server", function(data) {
 		var user = data['user'];
@@ -125,7 +159,7 @@ io.sockets.on("connection", function(socket){
 		//console.log("user in room "+user.inRoom);
 		console.log(user.name + ": " + data["message"]); // log it to the Node.JS output
 
-        chatHistory[user.inRoom].push("<strong>" + user.name + "</strong>: " + data['message']);
+        chatHistory[user.inRoom].push("<strong>" + user.name + "</strong>: " + data['message'] + "<div class='pull-right text-mute'>"+timeFormat(new Date().getTime())+"</div>");
 		io.sockets.in(user.inRoom).emit("message_to_client", {user: user.name, message:data["message"]}) // broadcast the message to other users
 
 	});
@@ -141,7 +175,10 @@ io.sockets.on("connection", function(socket){
 		// This callback runs when the server receives a new message from the client.
 		var fromMem = data['fromMem'];
 		var toMem = data['toMem'];
+		var chatID =data['chatID'];
+
 		console.log("Direct Message from " + fromMem.name + " to " + toMem.name + ": " + data["message"]); // log it to the Node.JS output
+        dmChatHistory[chatID].push("<strong>" + fromMem.name + "</strong>: " + data['message'] + "<div class='pull-right text-mute'>"+timeFormat(new Date().getTime())+"</div>");
 		io.sockets.to(toMem.id).emit("dm_message_to_client", {fromMem:fromMem, toMem:toMem, message:data["message"]}) // broadcast the message to other users
 		io.sockets.to(fromMem.id).emit("dm_message_to_client", {fromMem:fromMem, toMem:toMem, message:data["message"]}) // broadcast the message to other users
 	});
