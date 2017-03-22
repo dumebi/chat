@@ -130,11 +130,11 @@
 		.pull-right{
 			float: right;
 		}
-		
+
 		.bg-success{
 			background-color: #13ff0e;
 		}
-		
+
 		.bg-warning{
 			background-color: #f9ff95;
 		}
@@ -201,7 +201,7 @@
 		#message_input, #dmmessage_input {
 			width: 100%;
 		}
-	</style>	
+	</style>
 
 	<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
     <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
@@ -224,18 +224,18 @@
 			this.creator = creator;
 			this.id = id;
 			this.members = {};
-			
+
 			this.isPrivate = priv;
 			this.password = password;
-		
+
 			this.addMember = function(member) {
 				this.members[member.id] = member;
 			};
-			
+
 			this.removeMember = function(member) {
 				delete this.members[member.name];
 			};
-			
+
 			this.isMember = function(memberName) {
 				for(m in this.members) {
 					if (m == memberName) {
@@ -245,15 +245,15 @@
 				return false;
 			};
 		}
-		
+
 		function Person (name, id, roomOwn, roomIn) {
 			this.name = name;
 			this.id = id;
 			this.owns = roomOwn;
 			this.inRoom = roomIn;
 		}
-	</script>	
-	
+	</script>
+
 	<!-- Function Script -->
 	<script type ="text/javascript">
 		var user;
@@ -288,7 +288,7 @@
 		socketio.on("new_user_to_client", function(data) {
 			user = data;
 		});
-	
+
 		socketio.on("room_list", function(data) {
 			curRooms = data;
 			for (r in curRooms) {
@@ -296,7 +296,7 @@
 				$("#activeRooms").append('<li id="' + room.id + '" class="active">' + room.name + '</li>');
 			}
 		});
-		
+
 		socketio.on("create_room_to_client", function(data) {
 			var room = data;
 			$("#activeRooms").append('<li id="' + room.id + '"class="active">' + room.name + '</li>');
@@ -318,9 +318,15 @@
             activeDm = chatID;
 
             if(fromMem.name != user.name && $(".dm-nav:not(:contains('"+ fromMem.name +"'))")){
+                console.log("fromMem "+fromMem.name);
                 //$(".dm-nav").append('<li id="' + data['fromMem'].name + '">' + data['fromMem'].name + '<i class="pull-right glyphicon glyphicon-envelope"></i></li>');
                 $("#dmchatName").html("<h4>" + fromMem.name  + "</h4>");
+                $("#dm_to").val(fromMem.name);
+                $("#dm_to").attr('class', fromMem.id);
             } else if(toMem.name != user.name && $(".dm-nav:not(:contains('"+ toMem.name +"'))")){
+                console.log("toMem "+toMem.name);
+                $("#dm_to").val(toMem.name);
+                $("#dm_to").attr('class', toMem.id);
                 $(".dm-nav").append('<li id="' + chatID + '">' + toMem.name + '</li>');
                 $("#dmchatName").html("<h4>" + toMem.name  + "</h4>");
                 $('#chatroom-wrapper').hide();
@@ -335,7 +341,7 @@
             }
 
         });
-		
+
 		socketio.on("enter_room_to_client", function(data) {
             $('#chatroom-wrapper').show();
             $('#dm-wrapper').hide();
@@ -349,15 +355,17 @@
 		});
 
         socketio.on("enter_dm_to_client", function(data) {
-            $('#chatroom-wrapper').hide();
-            $('#dm-wrapper').show();
+            if(user.name == data["fromMem"].name) {
+                $('#chatroom-wrapper').hide();
+                $('#dm-wrapper').show();
+            }
             //$('#header').show();
             //$('#chatlog').empty();
             //$('#dmfooter').show();
 
-//            document.getElementById("chatlog").appendChild(document.createTextNode(data));
-//            document.getElementById("chatlog").appendChild(document.createElement("hr"));
-            document.getElementById('bottomspan').scrollIntoView();
+			var div = document.getElementById('dmchatlog');
+            div.scrollTop = div.scrollHeight;
+            document.getElementById('dmbottomspan').scrollIntoView();
         });
 
 		socketio.on("list_mems_to_client", function(data) {
@@ -373,7 +381,7 @@
 				$('#actionList').empty();
 			}
 		});
-		
+
 		socketio.on("message_to_client", function(data) {
 		    if(data['user'] == user.name) {
                 $( "#chatlog" ).append("<div class='row'> " +
@@ -403,7 +411,7 @@
             div.scrollTop = div.scrollHeight;
             document.getElementById('bottomspan').scrollIntoView();
         });
-		
+
 		socketio.on("send_pic_to_client", function(data) {
             if(data['user'] == user.name) {
                 $("#chatlog").append("<br><div class='half-col pull-left bg-success'>" + data['user'] + ": <img src='" + data['pic'] + "' alt='Could not send image.' height='100' width='100'></div><br>");
@@ -414,24 +422,44 @@
                 console.log(data['pic']);
 			}
 		});
-		
+
 		socketio.on("dm_message_to_client", function(data) {
 
-            if(data['fromMem'].name != user.name && $(".dm-nav:not(:contains('"+ data['fromMem'].name +"'))")){
-                $(".dm-nav").append('<li id="' + data['fromMem'].name + '">' + data['fromMem'].name + '<i class="pull-right glyphicon glyphicon-envelope"></i></li>');
-            } else if(data['toMem'].name != user.name && $(".dm-nav:not(:contains('"+ data['toMem'].name +"'))")){
-                $(".dm-nav").append('<li id="' + data['toMem'].name + '">' + data['toMem'].name + '</li>');
+            if(data['fromMem'].name == user.name){
+                var count = 0;
+                $( ".dm-nav li" ).each(function( index ) {
+                    if($( this ).text() == data['toMem']){
+                        count++;
+					}
+                    //console.log( index + ": " + $( this ).text() );
+                });
+                if(count == 0){
+                    $(".dm-nav").append('<li id="' + data['chatID'] + '">' + data['toMem'] + '</li>');
+				}
+            }
+            if(data['toMem'] == user.name){
+                var count = 0;
+                $( ".dm-nav li" ).each(function( index ) {
+                    if($( this ).text() == data['fromMem'].name){
+                        count++;
+                    }
+                    //console.log( index + ": " + $( this ).text() );
+                });
+                if(count == 0){
+                    $(".dm-nav").append('<li id="' + data['chatID'] + '">' + data['fromMem'].name + '<i class="pull-right glyphicon glyphicon-envelope"></i></li>');
+                }
             }
             //$('#chatroom-wrapper').hide();
             //$('#dm-wrapper').show();
 
             if(data['fromMem'].name == user.name) {
-                $("#dmchatName").html("<h4>" + data['toMem'].name + "</h4>");
+                $("#dmchatName").html("<h4>" + data['toMem'] + "</h4>");
                 $( "#dmchatlog" ).append("<div class='row'> " +
                     "<div style='padding: 2%;'  class='col-md-6 pull-left bg-success'><strong>"
                     +  data['fromMem'].name + "</strong>: " + data['message'] + "<div class='pull-right'>"+timeFormat(new Date().getTime())+"</div>" +
                     "</div> " +
                     "</div>");
+                enterDm(data['chatID']);
 
                 document.getElementById("dmchatlog").appendChild(document.createElement("br"));
                 document.getElementById("dmchatlog").append(document.createElement("hr"));
@@ -440,9 +468,10 @@
                 $("#dmchatName").html("<h4>" + data['fromMem'].name + "</h4>");
                 $( "#dmchatlog" ).append("<div class='row'> " +
                     "<div style='padding: 2%;' class='col-md-6 pull-right bg-warning'><strong>"
-                    +   data['fromMem'].name + "</strong>: " + data['message'] + "<div class='pull-right'>"+timeFormat(new Date().getTime())+"</div>" +
+                    +   data['toMem'] + "</strong>: " + data['message'] + "<div class='pull-right'>"+timeFormat(new Date().getTime())+"</div>" +
                     "</div> " +
                     "</div>");
+                enterDm(data['chatID']);
 
                 document.getElementById("dmchatlog").appendChild(document.createElement("br"));
                 document.getElementById("dmchatlog").appendChild(document.createElement("hr"));
@@ -458,12 +487,12 @@
 			//document.getElementById("dmchatlog").appendChild(document.createElement("hr"));
 			//document.getElementById("dmchatlog").appendChild(document.createTextNode("Direct Message From " + data['fromMem'].name + ": " + data['message']));
 		});
-		
+
 		socketio.on("kick_mem_to_client", function(data) {
 			document.getElementById("chatlog").appendChild(document.createTextNode(data));
             document.getElementById("chatlog").appendChild(document.createElement("hr"));
 		});
-		
+
 		socketio.on("kicked_mem_to_client", function(data) {
 			$('#header').hide();
 			$('#chatlog').empty();
@@ -472,12 +501,12 @@
 			document.getElementById("chatlog").appendChild(document.createTextNode(data));
             document.getElementById("chatlog").appendChild(document.createElement("hr"));
 		});
-		
+
 		socketio.on("ban_mem_to_client", function(data) {
 			document.getElementById("chatlog").appendChild(document.createTextNode(data));
             document.getElementById("chatlog").appendChild(document.createElement("hr"));
 		});
-		
+
 		socketio.on("banned_mem_to_client", function(data) {
 			var id = '#' + data['room'];
 			$(id).remove();
@@ -485,12 +514,12 @@
 			$('#header').hide();
 			$('#chatlog').empty();
 			$('#footer').hide();
-			
+
 			document.getElementById("chatlog").appendChild(document.createTextNode(data['message']));
             document.getElementById("chatlog").appendChild(document.createElement("hr"));
-			
+
 		});
-		
+
 		function sendMessage(){
 			var msg = $("#message_input").val();
 			$("#message_input").val("");
@@ -501,29 +530,31 @@
             var msg = $("#dmmessage_input").val();
             $("#dmmessage_input").val("");
             chatID = activeDm;
-            toMem = curDms[chatID];
+            toMem = $("#dm_to").val();
+            toMemID = $("#dm_to").attr('class');
             console.log("toMem DM is: "+toMem);
-            socketio.emit("dm_message_to_server", {fromMem:user, message:msg, toMem:toMem, chatID:chatID});
+            console.log("toMem DM ID is: "+toMemID);
+            socketio.emit("dm_message_to_server", {fromMem:user, message:msg, toMem:toMem, toMemID:toMemID, chatID:chatID});
         }
 
 		function enterRoom(id){
 			activeRoom = curRooms[id];
-			
+
 			if (activeRoom.isPrivate) {
 				$('#privateChatModal').modal('show');
-				
+
 				$("#privateChatSubmit").click(function(){
 					var isPass = $('#enterRoomPass').val();
-					
+
 					if (activeRoom.password === isPass) {
 						if (user.inRoom != null && user.inRoom != id) {
 							$('#chatlog').empty();
 							socketio.emit("leave_room_to_server", {user: user, id: id});
-						} 
-	
+						}
+
 						user.inRoom = activeRoom.id;
 						socketio.emit("enter_room_to_server", user);
-						$('#chatroom-wrapper').show(); 
+						$('#chatroom-wrapper').show();
 						$("#chatName").html("<h4>" + activeRoom.name + "</h4>");
 						$('#privateChatModal').modal('hide');
 						$('#enterRoomPass').val("");
@@ -545,17 +576,15 @@
 				$("#chatName").html("<h4>" + activeRoom.name + "</h4>");
 
 			}
-				
+
 		}
 
         function enterDm(id){
            activeDm = id;
-            socketio.emit("enter_dm_to_server", {user:user, activeDm: activeDm});
-            $('#dm-wrapper').show();
-            $('#chatroom-wrapper').hide();
+            socketio.emit("enter_dm_to_server", {from:user, activeDm: activeDm, to:$('#dm_to').val()});
             //$("#chatName").html("<h4>" + activeRoom.name + "</h4>");
         }
-			
+
 		socketio.on("leave_room_to_client", function(data) {
 			document.getElementById("chatlog").appendChild(document.createTextNode(data));
             document.getElementById("chatlog").appendChild(document.createElement("hr"));
@@ -638,7 +667,7 @@
         });
 
 
-		
+
 		function directMsg() {
 			var id = $("#dmButton").attr("class")
 			toMem = users[id];
@@ -688,27 +717,27 @@
 //            div.scrollTop = div.scrollHeight;
 //            document.getElementById('dmbottomspan').scrollIntoView();
 		}
-		
+
 		function kickMem() {
 			$('#memModal').modal('hide');
 			var id = $("#kickButton").attr("class")
 			toMem = users[id];
 			socketio.emit("kick_mem_to_server", {fromMem:user, toMem:toMem});
 		};
-		
+
 		function banMem() {
 			$('#memModal').modal('hide');
 			var id = $("#banButton").attr("class")
 			toMem = users[id];
 			socketio.emit("ban_mem_to_server", {fromMem:user, toMem:toMem});
 		};
-		
-		$(document).ready(function() {	
+
+		$(document).ready(function() {
 			$("#loginSubmit").click(function(){
 			   tempUser = new Person ($('#user').val(), null, null, null);
 			   socketio.emit("new_user_to_server", tempUser);
 			});
-			
+
 			// show password box for private chats
 			$('input[type="radio"]').click(function() {
 				if($(this).attr('id') == 'private') {
@@ -720,36 +749,36 @@
 					password = "";
 				}
 			});
-			
+
 			// create new room
-			$("#newRoomSubmit").click(function(){ 
+			$("#newRoomSubmit").click(function(){
 				var roomName = $('#roomName').val();
-				
+
 				//reset form
 				$('#roomName').val("");
-				
+
 				if (isPrivate) {
 					password = $('#roomPass').val();
 				}
 				activeRoom = new Room(roomName, user.id, null, isPrivate, password);
-				
+
 				rooms[rooms.length] = activeRoom;
-				
+
 				socketio.emit("create_room_to_server", activeRoom);
 			});
-			
-			
+
+
 			function getEventTarget(e) {
 				e = e || window.event;
-				return e.target || e.srcElement; 
+				return e.target || e.srcElement;
 			}
-			
+
 			var ul = document.getElementById('activeRooms');
 			ul.onclick = function(event) {
 				var target = getEventTarget(event);
 				var id = $(target).attr('id');
 				if(id != 'createNewRoom') {
-					enterRoom(id); 
+					enterRoom(id);
 				}
 			};
 
@@ -770,16 +799,16 @@
 				if (id != user.id) {
 					memActions(id);
 				}
-				
+
 			};
 
-		
+
 			function memActions(id) {
 				var mem = (users[id]);
-				
+
 				$('#memHeader').append("<h4>" + mem['name'] + "</h4>");
 				$('#actionList').append('<button id="dmButton" class="' + id + '"onclick="directMsg()">Direct Message</button>    ');
-	
+
 				if (user.id == activeRoom.creator) {
 					$('#actionList').append('<button id="kickButton" class="' + id + '" onclick="kickMem()">Kick Out</button>    ');
 					$('#actionList').append('<button id="banButton" class="' + id + '" onclick="banMem()">Ban</button>');
@@ -787,7 +816,7 @@
 				$('#chatMemsModal').modal('hide');
 				$('#memModal').modal('show');
 			};
-			
+
 			$("#chatMemsButton").click(function(){
 			   $("#memsList").empty();
 			   socketio.emit("list_mems_to_server", activeRoom.id);
@@ -805,9 +834,9 @@
 				$("#pic").val("");
 				socketio.emit("send_pic_to_server", {user:user, pic:pic});
 			});
-			
+
 		});
-		
+
 		// login modal function
 		$(window).load(function(){
 			$('#loginModal').modal({
@@ -818,20 +847,20 @@
 		});
 
 	</script>
-	
+
 	<!-- Menu Toggle Script -->
     <script>
-		$(document).ready(function() {	
+		$(document).ready(function() {
 			$("#menu-toggle").click(function(e) {
 				e.preventDefault();
 				$("#wrapper").toggleClass("toggled");
 			});
 		});
     </script>
-	
+
 </head>
 
-<body>	
+<body>
     <div id="wrapper">
 
         <!-- Sidebar -->
@@ -851,7 +880,7 @@
 
         <!-- Page Content -->
         <div id="chatroom-wrapper" class="container-fluid" data-room="" style='display:none'>
-                
+
 				<div id="header" class="row">
 					<div data-room="" id="chatName" class="col-sm-6"></div>
 					<div id="numMembers" class="col-sm-6 text-right">
@@ -860,7 +889,7 @@
 						<a href="#menu-toggle" class="btn btn-info btn-sm" id="menu-toggle">Toggle Menu</a>
 					</div>
 				</div>
-			  
+
 				<!-- content -->
 				<div id="chat" class="row">
 					<div style="overflow:auto" data-room="" id="chatlog" class="col-sm-12">
@@ -868,8 +897,8 @@
 					</div>
 					<span id='bottomspan'></span>
 				</div>
-			  
-				<div id="footer" class="row" >    
+
+				<div id="footer" class="row" >
 					<br>
 					<div id="messageBox" class="col-sm-10">
 						<input id="message_input" type="text"/>
@@ -879,14 +908,16 @@
 						<button data-room="" id="uploadButton" data-toggle="modal" data-target="#uploadModal">upload</button>
 					</div>
 				</div>
-				
+
         </div>
         <!-- /#chatroom-wrapper -->
 
 		<div id="dm-wrapper" class="container-fluid" data-dm="" style='display:none'>
 
 			<div id="header" class="row">
-				<div data-dm="" id="dmchatName" class="col-sm-6"></div>
+				<div  id="dmchatName" class="col-sm-6"></div>
+				<input type="text" id="dm_to">
+
 
 			</div>
 
@@ -911,7 +942,7 @@
 
 		</div>
 		<!-- /#chatroom-wrapper -->
-		
+
     </div>
     <!-- /#wrapper -->
 
@@ -931,7 +962,7 @@
 						</div>
 					</form>
 				</div>
-				
+
 				<div class="modal-footer">
 					<button id="loginSubmit" type="submit" class="btn btn-default" data-dismiss="modal">Start Chatting</button>
 				</div>
@@ -939,7 +970,7 @@
 		</div>
 	</div>
 	<!-- /loginModal -->
-	
+
 	<!-- newChatModal -->
 	<div id="newChatModal" class="modal fade" role="dialog">
 		<div class="modal-dialog">
@@ -948,7 +979,7 @@
 				<div class="modal-header">
 					<button type="button" class="close" data-dismiss="modal">&times;</button>
 				</div>
-				
+
 				<div class="modal-body">
 					<form id = "newRoomForm" class="form-horizontal" role="form">
 						<div class="form-group">
@@ -957,17 +988,17 @@
 								<input id="roomName" type="text" class="form-control" placeholder="Enter room name" required>
 							</div>
 						</div>
-						
+
 						<div class="form-group">
 							<div class="col-sm-3">Type:</div>
 							<div id="roomType" class="col-sm-9">
 								<input id="public" type="radio" name="roomTypeOption">
 								<label>Public  </label>
-								<input id="private" type="radio" name="roomTypeOption"> 
+								<input id="private" type="radio" name="roomTypeOption">
 								<label>Private</label>
 							</div>
 						</div>
-						
+
 						<div id="reveal-if-active" style='display:none'>
 							<div class="form-group">
 								<label class="control-label col-sm-3" for="roomPass">Password:</label>
@@ -978,7 +1009,7 @@
 						</div>
 					</form>
 				</div>
-				
+
 				<div class="modal-footer">
 					<button id="newRoomSubmit" type="submit" class="btn btn-default" data-dismiss="modal">Create Room</button>
 				</div>
@@ -986,7 +1017,7 @@
 		</div>
 	</div>
 	<!-- /newChatModal -->
-	
+
 	<!-- privateChatModal -->
 	<div id="privateChatModal" class="modal fade" role="dialog">
 		<div class="modal-dialog">
@@ -1003,7 +1034,7 @@
 						</div>
 					</form>
 				</div>
-				
+
 				<div class="modal-footer">
 					<button id="privateChatSubmit" type="submit" class="btn btn-default" data-dismiss="modal">Enter Room</button>
 				</div>
@@ -1011,7 +1042,7 @@
 		</div>
 	</div>
 	<!-- /loginModal -->
-	
+
 	<!-- chatMemsModal -->
 	<div id="chatMemsModal" class="modal fade" role="dialog">
 		<div class="modal-dialog">
@@ -1068,7 +1099,7 @@
 		</div>
 	</div>
 	<!-- /inviteMemsModal -->
-	
+
 	<!-- memModal -->
 	<div id="memModal" class="modal fade" role="dialog">
 		<div class="modal-dialog">
@@ -1078,18 +1109,18 @@
 					<button type="button" class="close" data-dismiss="modal">&times;</button>
 					<div id="memHeader"></div>
 				</div>
-				
+
 				<div class="modal-body" id="actionList"></div>
-				
+
 			</div>
 		</div>
 	</div>
 	<!-- /memModal -->
-	
+
 	<!-- dmModal -->
 	<!---->
 	<!-- /dmModal -->
-	
+
 	<!-- uploadModal -->
 	<div id="uploadModal" class="modal fade" role="dialog">
 		<div class="modal-dialog">
@@ -1099,13 +1130,13 @@
 					<button type="button" class="close" data-dismiss="modal">&times;</button>
 					<h4>Enter the url of your image...</h4>
 				</div>
-				
+
 				<div class="modal-body">
 					<div class="form-group">
 						<input type="url" id="pic" style="width: 100%;">
 					</div>
 				</div>
-				
+
 				<div class="modal-footer">
 					<button id="uploadSubmit" type="submit" class="btn btn-default" data-dismiss="modal">Send</button>
 				</div>
@@ -1113,8 +1144,8 @@
 		</div>
 	</div>
 	<!-- /uploadModal -->
-	
-	
+
+
 
 </body>
 </html>

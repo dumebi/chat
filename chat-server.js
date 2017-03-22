@@ -131,7 +131,9 @@ io.sockets.on("connection", function(socket){
 
     socket.on("enter_dm_to_server", function(data) {
         var chatID = data['activeDm'];
-        io.sockets.emit("enter_dm_to_client", chatID);
+        var from = data['from'];
+        var to = data['to'];
+        io.sockets.emit("enter_dm_to_client", {chatID:chatID, fromMem:from, toMem:to});
 
         var keys = _.keys(dmChatHistory);
         if (_.contains(keys, chatID)) {
@@ -175,12 +177,13 @@ io.sockets.on("connection", function(socket){
 		// This callback runs when the server receives a new message from the client.
 		var fromMem = data['fromMem'];
 		var toMem = data['toMem'];
-		var chatID =data['chatID'];
+		var chatID = data['chatID'];
+		var toMemID = data['toMemID'];
 
-		console.log("Direct Message from " + fromMem.name + " to " + toMem.name + ": " + data["message"]); // log it to the Node.JS output
+		console.log("Direct Message from " + fromMem.name + " to " + toMem + ": " + data["message"]); // log it to the Node.JS output
         dmChatHistory[chatID].push("<strong>" + fromMem.name + "</strong>: " + data['message'] + "<div class='pull-right text-mute'>"+timeFormat(new Date().getTime())+"</div>");
-		io.sockets.to(toMem.id).emit("dm_message_to_client", {fromMem:fromMem, toMem:toMem, message:data["message"]}) // broadcast the message to other users
-		io.sockets.to(fromMem.id).emit("dm_message_to_client", {fromMem:fromMem, toMem:toMem, message:data["message"]}) // broadcast the message to other users
+		io.sockets.to(toMemID).emit("dm_message_to_client", {chatID:chatID, fromMem:fromMem, toMem:toMem, message:data["message"]}) // broadcast the message to other users
+		io.sockets.to(fromMem.id).emit("dm_message_to_client", {chatID:chatID, fromMem:fromMem, toMem:toMem, message:data["message"]}) // broadcast the message to other users
 	});
 	
 	socket.on('kick_mem_to_server', function(data) {
