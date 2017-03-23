@@ -77,6 +77,7 @@ var sockets = [];
 var chatHistory = {};
 var dmChatHistory = {};
 
+
 io.sockets.on("connection", function(socket){
 	// This callback runs when a new Socket.IO connection is established.
 	
@@ -121,7 +122,7 @@ io.sockets.on("connection", function(socket){
 		users[data.id].inRoom = roomId;
 		socket.join(data.inRoom);
 		rooms[roomId].addMember(users[data.id]);
-		io.sockets.in(data.inRoom).emit("enter_room_to_client", data.name + " has joined!");
+		io.sockets.in(data.inRoom).emit("enter_room_to_client", data);
 
         var keys = _.keys(chatHistory);
         if (_.contains(keys, users[data.id].inRoom)) {

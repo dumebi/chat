@@ -258,6 +258,8 @@
 	<script type ="text/javascript">
 		var user;
 		var rooms = [];
+        var dmChatCount = {};
+        var roomChatCount = {};
 		var activeRoom = null;
         var activeDm = null;
 		var isPrivate;
@@ -265,6 +267,7 @@
 		var curRooms = {};
         var curDms = {};
 		var users = {};
+
 
 
         var toMem;
@@ -301,6 +304,7 @@
 			var room = data;
 			$("#activeRooms").append('<li id="' + room.id + '"class="active">' + room.name + '</li>');
 			curRooms[room.id] = room;
+
 			$('input[type="radio"]').prop('checked', false);
 			$('#reveal-if-active').hide();
 			$('#roomPass').val("");
@@ -343,18 +347,24 @@
         });
 
 		socketio.on("enter_room_to_client", function(data) {
-            $('#chatroom-wrapper').show();
-            $('#dm-wrapper').hide();
-			$('#header').show();
-			//$('#chatlog').empty();
-			$('#footer').show();
+            console.log("user is "+user.name);
+            console.log("sender is "+data.name);
+            if(user.name == data.name) {
+                $('#chatroom-wrapper').show();
+                $('#dm-wrapper').hide();
+                $('#header').show();
+                //$('#chatlog').empty();
+                $('#footer').show();
+            }
 
-			document.getElementById("chatlog").appendChild(document.createTextNode(data));
+			document.getElementById("chatlog").appendChild(document.createTextNode(data.name  + " has joined!"));
             document.getElementById("chatlog").appendChild(document.createElement("hr"));
             document.getElementById('bottomspan').scrollIntoView();
 		});
 
         socketio.on("enter_dm_to_client", function(data) {
+            console.log("user is "+user.name);
+            console.log("sender is "+data["fromMem"].name);
             if(user.name == data["fromMem"].name) {
                 $('#chatroom-wrapper').hide();
                 $('#dm-wrapper').show();
@@ -449,8 +459,6 @@
                     $(".dm-nav").append('<li id="' + data['chatID'] + '">' + data['fromMem'].name + '<i class="pull-right glyphicon glyphicon-envelope"></i></li>');
                 }
             }
-            //$('#chatroom-wrapper').hide();
-            //$('#dm-wrapper').show();
 
             if(data['fromMem'].name == user.name) {
                 $("#dmchatName").html("<h4>" + data['toMem'] + "</h4>");
@@ -459,7 +467,7 @@
                     +  data['fromMem'].name + "</strong>: " + data['message'] + "<div class='pull-right'>"+timeFormat(new Date().getTime())+"</div>" +
                     "</div> " +
                     "</div>");
-                enterDm(data['chatID']);
+                //enterDm(data['chatID']);
 
                 document.getElementById("dmchatlog").appendChild(document.createElement("br"));
                 document.getElementById("dmchatlog").append(document.createElement("hr"));
@@ -471,7 +479,7 @@
                     +   data['toMem'] + "</strong>: " + data['message'] + "<div class='pull-right'>"+timeFormat(new Date().getTime())+"</div>" +
                     "</div> " +
                     "</div>");
-                enterDm(data['chatID']);
+                //enterDm(data['chatID']);
 
                 document.getElementById("dmchatlog").appendChild(document.createElement("br"));
                 document.getElementById("dmchatlog").appendChild(document.createElement("hr"));
@@ -484,8 +492,6 @@
             div.scrollTop = div.scrollHeight;
             document.getElementById('dmbottomspan').scrollIntoView();
 
-			//document.getElementById("dmchatlog").appendChild(document.createElement("hr"));
-			//document.getElementById("dmchatlog").appendChild(document.createTextNode("Direct Message From " + data['fromMem'].name + ": " + data['message']));
 		});
 
 		socketio.on("kick_mem_to_client", function(data) {
@@ -622,9 +628,6 @@
                     }
                     //$("#chatlog").append(msg);
                 });
-            } else {
-
-                //$("#chatlog").append("<li><strong><span class='text-warning'>No past messages in this room.</li>");
             }
         });
 
@@ -635,10 +638,7 @@
                 $.each(data, function(data, msg) {
                     //var str = msg;
                     var str= msg.substr(0, msg.indexOf(':'));
-                    //str = str.split(":").pop();
 
-                    //console.log("str is "+str);
-                    //console.log("user is "+user.name);
                     if(str == "<strong>"+user.name+"</strong>") {
                         $( "#dmchatlog" ).append("<div class='row'> " +
                             "<div style='padding: 2%;'  class='col-md-6 pull-left bg-success'>"+ msg +
@@ -647,7 +647,6 @@
 
                         document.getElementById("dmchatlog").appendChild(document.createElement("br"));
                         document.getElementById("dmchatlog").append(document.createElement("hr"));
-                        //document.getElementById("chatlog").append("<div class='half-col pull-left bg-success'>" +  data['user'] + ": " + data['message'] + "</div>");
                     }else{
                         $( "#dmchatlog" ).append("<div class='row'> " +
                             "<div style='padding: 2%;'  class='col-md-6 pull-right bg-warning'>"+ msg +
@@ -656,13 +655,8 @@
 
                         document.getElementById("dmchatlog").appendChild(document.createElement("br"));
                         document.getElementById("dmchatlog").appendChild(document.createElement("hr"));
-                        // document.getElementById("chatlog").appendChild(document.createTextNode("<div class='half-col pull-right bg-warning'>" + data['user'] + ": " + data['message']+ "</div>"));
                     }
-                    //$("#chatlog").append(msg);
                 });
-            } else {
-
-                //$("#chatlog").append("<li><strong><span class='text-warning'>No past messages in this room.</li>");
             }
         });
 
@@ -680,42 +674,7 @@
 			//$('#dmHeader').append('Direct Message to ' + toMem['name']);
 
 			$('#memModal').modal('hide');
-			//$('#dmModal').modal('show');
 
-            //$('#chatroom-wrapper').hide();
-            //$('#dm-wrapper').show();
-
-
-//            if(data['fromMem'].name == user.name) {
-//                $("#dmchatName").html("<h4>" + data['toMem'].name + "</h4>");
-//
-//                $( "#dmchatlog" ).append("<div class='row'> " +
-//                    "<div style='padding: 2%;'  class='col-md-6 pull-left bg-success'><strong>"
-//                    +  data['fromMem'].name + "</strong>: " + data['message'] + "<div class='pull-right'>"+timeFormat(new Date().getTime())+"</div>" +
-//                    "</div> " +
-//                    "</div>");
-//
-//                document.getElementById("dmchatlog").appendChild(document.createElement("br"));
-//                document.getElementById("dmchatlog").append(document.createElement("hr"));
-//                //document.getElementById("chatlog").append("<div class='half-col pull-left bg-success'>" +  data['user'] + ": " + data['message'] + "</div>");
-//            }else{
-//                $("#dmchatName").html("<h4>" + data['fromMem'].name + "</h4>");
-//                $( "#dmchatlog" ).append("<div class='row'> " +
-//                    "<div style='padding: 2%;' class='col-md-6 pull-right bg-warning'><strong>"
-//                    +   data['fromMem'].name + "</strong>: " + data['message'] + "<div class='pull-right'>"+timeFormat(new Date().getTime())+"</div>" +
-//                    "</div> " +
-//                    "</div>");
-//
-//                document.getElementById("dmchatlog").appendChild(document.createElement("br"));
-//                document.getElementById("dmchatlog").appendChild(document.createElement("hr"));
-                // document.getElementById("chatlog").appendChild(document.createTextNode("<div class='half-col pull-right bg-warning'>" + data['user'] + ": " + data['message']+ "</div>"));
-//            }
-
-
-//            var div = document.getElementById('dmchatlog');
-//            //var elem = document.getElementById('data');
-//            div.scrollTop = div.scrollHeight;
-//            document.getElementById('dmbottomspan').scrollIntoView();
 		}
 
 		function kickMem() {
@@ -760,11 +719,28 @@
 				if (isPrivate) {
 					password = $('#roomPass').val();
 				}
-				activeRoom = new Room(roomName, user.id, null, isPrivate, password);
 
-				rooms[rooms.length] = activeRoom;
+                $('input[type="radio"]').prop('checked', false);
 
-				socketio.emit("create_room_to_server", activeRoom);
+				var exist = false;
+                $.each(rooms, function(rooms, room) {
+                    console.log("exsting rooms "+room.name);
+                    console.log("new room "+roomName);
+
+                    if(room.name == roomName) {
+                        exist = true;
+                    }
+                });
+
+				if(exist) {
+				    alert('Room already exists');
+                }else {
+                    activeRoom = new Room(roomName, user.id, null, isPrivate, password);
+
+                    rooms[rooms.length] = activeRoom;
+
+                    socketio.emit("create_room_to_server", activeRoom);
+                }
 			});
 
 
