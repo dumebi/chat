@@ -34,11 +34,12 @@ function timeFormat(msTime) {
         zeroPad(d.getSeconds(), 2) + " ";
 }
 
-function Room (name, creator, id, priv, password) {
+function Room (name, creator, id, priv, password, isDM) {
 	this.name = name;
 	this.creator = creator;
 	this.id = id;
 	this.members = {};
+	this.isDM = isDM;
 	
 	this.isPrivate = priv;
 	this.password = password;
@@ -61,6 +62,7 @@ function Room (name, creator, id, priv, password) {
 	};
 }
 
+
 function Person (name, id, roomOwn, roomIn) {
 	this.name = name;
 	this.id = id;
@@ -72,6 +74,7 @@ function Person (name, id, roomOwn, roomIn) {
 // Do the Socket.IO magic:
 var io = socketio.listen(app);
 var rooms = {};
+var dm = {};
 var users = {};
 var sockets = [];
 var chatHistory = {};
@@ -82,65 +85,68 @@ io.sockets.on("connection", function(socket){
 	// This callback runs when a new Socket.IO connection is established.
 	
 	socket.on("new_user_to_server", function(data){
-		var person = data;
-		person.id = socket.id;
-		users[socket.id] = person;
-		sockets[socket.id] = socket;
-		socket.emit("new_user_to_client", person);
-		if (Object.keys(rooms).length != 0) {
-			socket.emit("room_list", rooms);
-		}
-	})
+        var person = data;
+        person.id = socket.id;
+        count = 0;
+        _.each(users, function(user){
+            if(user.name == person.name){
+                count++;
+            }
+        });
+        if (count > 0) {
+            //io.sockets.emit("history", chatHistory[users[data.id].inRoom]);
+            socket.emit("user_exists_to_client", person);
+        }
+        else{
+            users[socket.id] = person;
+            sockets[socket.id] = socket;
+            socket.emit("new_user_to_client", person);
+            if (Object.keys(rooms).length != 0) {
+                socket.emit("room_list", rooms);
+            }
+        }
+	});
 	
 	socket.on("create_room_to_server", function(data) {
 		var roomId = uuid.v4();
-		var userId = data['creator'];
-		var room = new Room(data['name'], userId, roomId, data['isPrivate'], data['password']);
+		var activeRoom = data['activeRoom'];
+        var toMem = data['toMem'];
+		var userId = activeRoom['creator'];
+		var fromMem = users[userId];
+		var room = new Room(activeRoom['name'], userId, roomId, activeRoom['isPrivate'], activeRoom['password'], activeRoom['isDM']);
+
+
 		rooms[roomId] = room;
 		//add room to socket, and auto join the creator of the room
 		socket.join(roomId);
 		users[userId].owns = roomId;
 		users[userId].inRoom = roomId;
 
+
+
         chatHistory[roomId] = [];
 
 		room.addMember(users[userId]);
-		io.sockets.emit('create_room_to_client', room);
+		if(toMem != null){
+            room.addMember(toMem);
+		}
+		io.sockets.emit('create_room_to_client', {room:room, toMem:toMem, fromMem:fromMem});
 	});
-
-    socket.on("create_dm_to_server", function(data) {
-
-        dmChatHistory[data['chatID']] = [];
-        console.log("server chatID "+data['chatID']);
-
-        //room.addMember(users[userId]);
-        io.sockets.emit('create_dm_to_client', {chatID: data['chatID'], toMem: data['toMem'], fromMem: data['fromMem']});
-    });
 
 	socket.on("enter_room_to_server", function(data) {
 		var roomId = data.inRoom;
 		users[data.id].inRoom = roomId;
 		socket.join(data.inRoom);
 		rooms[roomId].addMember(users[data.id]);
-		io.sockets.in(data.inRoom).emit("enter_room_to_client", data);
+        var room = rooms[roomId];
+        var userdata = users[data.id];
+		io.sockets.in(data.inRoom).emit("enter_room_to_client", {user:data, room:room});
 
         var keys = _.keys(chatHistory);
         if (_.contains(keys, users[data.id].inRoom)) {
-            io.sockets.emit("history", chatHistory[users[data.id].inRoom]);
+            io.sockets.emit("history", {chathistory: chatHistory[users[data.id].inRoom], userdata:userdata});
         }
 	});
-
-    socket.on("enter_dm_to_server", function(data) {
-        var chatID = data['activeDm'];
-        var from = data['from'];
-        var to = data['to'];
-        io.sockets.emit("enter_dm_to_client", {chatID:chatID, fromMem:from, toMem:to});
-
-        var keys = _.keys(dmChatHistory);
-        if (_.contains(keys, chatID)) {
-            io.sockets.emit("dmhistory", dmChatHistory[chatID]);
-        }
-    });
 	
 	socket.on("leave_room_to_server", function(data) {
 		var user = data['user'];
@@ -148,7 +154,7 @@ io.sockets.on("connection", function(socket){
 		var oldRoom = user.inRoom;
 		users[user.id].inRoom = newRoom;
 		socket.leave(oldRoom);
-		io.sockets.in(oldRoom).emit("leave_room_to_client", user.name + " has left!");
+		io.sockets.in(oldRoom).emit("leave_room_to_client", {room:oldRoom, userdata:user.name + " has left!"});
 		rooms[oldRoom].removeMember(users[user.id]);
 	});
 	
@@ -173,19 +179,6 @@ io.sockets.on("connection", function(socket){
 		io.sockets.in(user.inRoom).emit("send_pic_to_client", {user: user.name, pic:data["pic"]}) // broadcast the message to other users
 	});
 
-	
-	socket.on('dm_message_to_server', function(data) {
-		// This callback runs when the server receives a new message from the client.
-		var fromMem = data['fromMem'];
-		var toMem = data['toMem'];
-		var chatID = data['chatID'];
-		var toMemID = data['toMemID'];
-
-		console.log("Direct Message from " + fromMem.name + " to " + toMem + ": " + data["message"]); // log it to the Node.JS output
-        dmChatHistory[chatID].push("<strong>" + fromMem.name + "</strong>: " + data['message'] + "<div class='pull-right text-mute'>"+timeFormat(new Date().getTime())+"</div>");
-		io.sockets.to(toMemID).emit("dm_message_to_client", {chatID:chatID, fromMem:fromMem, toMem:toMem, message:data["message"]}) // broadcast the message to other users
-		io.sockets.to(fromMem.id).emit("dm_message_to_client", {chatID:chatID, fromMem:fromMem, toMem:toMem, message:data["message"]}) // broadcast the message to other users
-	});
 	
 	socket.on('kick_mem_to_server', function(data) {
 		// This callback runs when the server receives a new message from the client.
