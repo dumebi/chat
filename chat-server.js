@@ -153,7 +153,7 @@ io.sockets.on("connection", function(socket){
 		var newRoom = data['id'];
 		var oldRoom = user.inRoom;
 		users[user.id].inRoom = newRoom;
-		socket.leave(oldRoom);
+		//socket.leave(oldRoom);
 		io.sockets.in(oldRoom).emit("leave_room_to_client", {room:oldRoom, userdata:user.name + " has left!"});
 		rooms[oldRoom].removeMember(users[user.id]);
 	});
@@ -165,11 +165,12 @@ io.sockets.on("connection", function(socket){
 	socket.on('message_to_server', function(data) {
 		// This callback runs when the server receives a new message from the client.
 		var user = data['user'];
+		var room = rooms[user.inRoom];
 		//console.log("user in room "+user.inRoom);
 		console.log(user.name + ": " + data["message"]); // log it to the Node.JS output
 
         chatHistory[user.inRoom].push("<strong>" + user.name + "</strong>: " + data['message'] + "<div class='pull-right text-mute'>"+timeFormat(new Date().getTime())+"</div>");
-		io.sockets.in(user.inRoom).emit("message_to_client", {user: user.name, message:data["message"]}) // broadcast the message to other users
+		io.sockets.in(user.inRoom).emit("message_to_client", {user: user.name, message:data["message"], room:room}); // broadcast the message to other users
 
 	});
 	

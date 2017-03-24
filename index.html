@@ -259,15 +259,11 @@
 	<script type ="text/javascript">
 		var user;
 		var rooms = [];
-		var dms = [];
-        var dmChatCount = {};
         var roomChatCount = {};
 		var activeRoom = null;
-        var activeDm = null;
 		var isPrivate;
 		var password;
 		var curRooms = {};
-        var curDms = {};
 		var users = {};
 
 
@@ -318,7 +314,7 @@
 			var toMem = data['toMem'];
             var fromMem = data['fromMem'];
 			console.log("room is dm: "+room.isDM);
-
+            roomChatCount[room.id] = 0;
 
 			if(room.isDM == true){
                 $('#numMembers').hide();
@@ -356,7 +352,11 @@
 			else{
                 $('#numMembers').show();
 			}
-            if(user.name == data.name) {
+            if(user.name == data['user'].name) {
+                roomChatCount[data['room'].id] = 0;
+                var sidebar = $("#"+data['room'].id+"");
+                sidebar.find("span").remove();
+
                 $('#chatroom-wrapper').show();
                 $('#dm-wrapper').hide();
                 $('#header').show();
@@ -384,33 +384,47 @@
 		});
 
 		socketio.on("message_to_client", function(data) {
-		    if(data['user'] == user.name) {
-                $( "#chatlog" ).append("<div class='row'> " +
-											"<div style='padding: 2%;'  class='col-md-6 pull-left bg-success'><strong>"
-												+  data['user'] + "</strong>: " + data['message'] + "<div class='pull-right text-mute'>"+timeFormat(new Date().getTime())+"</div>" +
-											"</div> " +
-										"</div>");
+		    console.log("active room: "+activeRoom.id);
+		    console.log("message room: "+data['room'].id);
+			if(activeRoom.id != data['room'].id){
+			    roomChatCount[data['room'].id]++;
+			    console.log("roomchatcount "+roomChatCount);
+                var message = roomChatCount[data['room'].id] > 0 ? '<span class="badge pull-right">'+roomChatCount[data['room'].id]+'</span>' : '';
+                var sidebar = $("#"+data['room'].id+"");
+                sidebar.find("span").remove();
+                sidebar.append(message);
+                //$("#sidebar-wrapper #"+data['room'].id+"").html( + message);
+			}
+			else{
+                if(data['user'] == user.name) {
+                    $( "#chatlog" ).append("<div class='row'> " +
+                        "<div style='padding: 2%;'  class='col-md-6 pull-left bg-success'><strong>"
+                        +  data['user'] + "</strong>: " + data['message'] + "<div class='pull-right text-mute'>"+timeFormat(new Date().getTime())+"</div>" +
+                        "</div> " +
+                        "</div>");
 
-                document.getElementById("chatlog").appendChild(document.createElement("br"));
-                document.getElementById("chatlog").append(document.createElement("hr"));
-                //document.getElementById("chatlog").append("<div class='half-col pull-left bg-success'>" +  data['user'] + ": " + data['message'] + "</div>");
-            }else{
-                $( "#chatlog" ).append("<div class='row'> " +
-											"<div style='padding: 2%;' class='col-md-6 pull-right bg-warning'><strong>"
-                    							+  data['user'] + "</strong>: " + data['message'] + "<div class='pull-right text-mute'>"+timeFormat(new Date().getTime())+"</div>" +
-                    						"</div> " +
-										"</div>");
+                    document.getElementById("chatlog").appendChild(document.createElement("br"));
+                    document.getElementById("chatlog").append(document.createElement("hr"));
+                    //document.getElementById("chatlog").append("<div class='half-col pull-left bg-success'>" +  data['user'] + ": " + data['message'] + "</div>");
+                }else{
+                    $( "#chatlog" ).append("<div class='row'> " +
+                        "<div style='padding: 2%;' class='col-md-6 pull-right bg-warning'><strong>"
+                        +  data['user'] + "</strong>: " + data['message'] + "<div class='pull-right text-mute'>"+timeFormat(new Date().getTime())+"</div>" +
+                        "</div> " +
+                        "</div>");
 
-                document.getElementById("chatlog").appendChild(document.createElement("br"));
-                document.getElementById("chatlog").appendChild(document.createElement("hr"));
-                // document.getElementById("chatlog").appendChild(document.createTextNode("<div class='half-col pull-right bg-warning'>" + data['user'] + ": " + data['message']+ "</div>"));
+                    document.getElementById("chatlog").appendChild(document.createElement("br"));
+                    document.getElementById("chatlog").appendChild(document.createElement("hr"));
+                    // document.getElementById("chatlog").appendChild(document.createTextNode("<div class='half-col pull-right bg-warning'>" + data['user'] + ": " + data['message']+ "</div>"));
+                }
+
+
+                var div = document.getElementById('chatlog');
+                //var elem = document.getElementById('data');
+                div.scrollTop = div.scrollHeight;
+                document.getElementById('bottomspan').scrollIntoView();
 			}
 
-
-            var div = document.getElementById('chatlog');
-            //var elem = document.getElementById('data');
-            div.scrollTop = div.scrollHeight;
-            document.getElementById('bottomspan').scrollIntoView();
         });
 
 		socketio.on("send_pic_to_client", function(data) {
@@ -505,8 +519,8 @@
 
 		socketio.on("leave_room_to_client", function(data) {
 		    var room = data['room'];
-		    if(!room.isDM) {
-                document.getElementById("chatlog").appendChild(document.createTextNode(data['data']));
+		    if(!room.isDM && room.id == activeRoom.id) {
+                document.getElementById("chatlog").appendChild(document.createTextNode(data['userdata']));
                 document.getElementById("chatlog").appendChild(document.createElement("hr"));
             }
 		});
