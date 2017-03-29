@@ -4,6 +4,11 @@ var http = require("http"),
 	fs = require("fs"),
     _ = require('underscore')._,
 	uuid = require("uuid");
+var mongoose = require('mongoose');
+
+var MONGOLAB_URI = "mongodb://localhost:27017/kornet";
+var mongod = MONGOLAB_URI;
+mongoose.connect(mongod);
  
 // Listen for HTTP connections.  This is essentially a miniature static file server that only serves our one file, client.html:
 var app = http.createServer(function(req, resp){
@@ -74,11 +79,9 @@ function Person (name, id, roomOwn, roomIn) {
 // Do the Socket.IO magic:
 var io = socketio.listen(app);
 var rooms = {};
-var dm = {};
 var users = {};
 var sockets = [];
 var chatHistory = {};
-var dmChatHistory = {};
 
 
 io.sockets.on("connection", function(socket){
